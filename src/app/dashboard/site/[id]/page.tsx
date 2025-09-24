@@ -3,16 +3,119 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Site } from '@/lib/types'
 import { LogoUploader } from '@/components/LogoUploader'
 import { extractColorsFromImage } from '@/lib/colors'
 import { FloatingAIChat } from '@/components/FloatingAIChat'
-import Link from 'next/link'
 
-interface SiteDetailPageProps {
-  params: {
-    id: string
+// Clean HTML generation function with proper error handling
+function generatePreviewHTML(site: any, data: any): string {
+  try {
+    // Clean CSS with proper variable replacement
+    const cleanCSS = site.generated_css
+      .replace(/--brand-primary:\s*[^;]+;/g, `--brand-primary: ${data.primary};`)
+      .replace(/--brand-secondary:\s*[^;]+;/g, `--brand-secondary: ${data.secondary};`)
+      .replace(/--brand-accent:\s*[^;]+;/g, `--brand-accent: ${data.accent};`)
+
+    // Clean HTML with safe replacements
+    let cleanHTML = site.generated_html
+    
+    // Safe text replacements with fallbacks and error handling
+    const safeData = {
+      brandName: (data.brandName || 'Casino').toString(),
+      headline: (data.headline || 'Win Big!').toString(),
+      cta: (data.cta || 'Play Now').toString()
+    }
+
+    const replacements = [
+      { pattern: /💎\s*([^💎]*?)\s*💎/g, replacement: `💎 ${safeData.brandName.toUpperCase()} 💎` },
+      { pattern: /⭐\s*([^⭐]*?)\s*⭐/g, replacement: `⭐ ${safeData.headline} ⭐` },
+      { pattern: /🎰\s*([^🎰]*?)(?=<\/button>)/g, replacement: `🎰 ${safeData.cta}` },
+      { pattern: /<h2[^>]*>([^<]*?SLOTS[^<]*?)<\/h2>/gi, replacement: `<h2 style="font-size: 1.25rem; font-weight: bold; color: #facc15;">${safeData.brandName.toUpperCase()} SLOTS</h2>` },
+      { pattern: /<h1[^>]*>([^<]*?)<\/h1>/gi, replacement: `<h1 style="font-size: 3rem; font-weight: 900; color: #facc15; margin-bottom: 1.5rem; text-shadow: 0 0 1px #ffd700, 0 0 2px #ffd700, 0 1px 0 rgba(0,0,0,0.3);">💎 ${safeData.brandName.toUpperCase()} 💎</h1>` }
+    ]
+
+    replacements.forEach(({ pattern, replacement }) => {
+      try {
+        cleanHTML = cleanHTML.replace(pattern, replacement)
+      } catch (replaceError) {
+        console.warn('Replacement error:', replaceError)
+      }
+    })
+
+    // Handle logo with error handling
+    if (data.logoUrl) {
+      cleanHTML = cleanHTML.replace(
+        /<img[^>]*src="[^"]*"[^>]*>/gi,
+        `<img src="${data.logoUrl}" alt="${data.brandName}" style="height: 4rem; width: auto; max-width: 200px; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)) brightness(1.2) contrast(1.1);" onerror="this.style.display='none'; this.parentElement.style.minHeight='1rem';" />`
+      )
+    }
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>${data.brandName} - ${data.headline}</title>
+  <style>
+    ${cleanCSS}
+    :root {
+      --brand-primary: ${data.primary} !important;
+      --brand-secondary: ${data.secondary} !important;
+      --brand-accent: ${data.accent} !important;
+    }
+    /* Error handling styles */
+    img[src=""], img:not([src]) {
+      display: none !important;
+    }
+    .error-fallback {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px dashed rgba(255, 255, 255, 0.3);
+      padding: 1rem;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.7);
+      border-radius: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  ${cleanHTML}
+</body>
+</html>`
+  } catch (error) {
+    console.error('Error generating preview HTML:', error)
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Preview Error</title>
+  <style>
+    body { 
+      font-family: system-ui, sans-serif; 
+      padding: 2rem; 
+      background: #1a1a1a; 
+      color: white; 
+      text-align: center;
+    }
+    .error { 
+      background: rgba(239, 68, 68, 0.1); 
+      border: 1px solid rgba(239, 68, 68, 0.3); 
+      padding: 2rem; 
+      border-radius: 0.5rem; 
+      margin: 2rem 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="error">
+    <h2>⚠️ Preview Error</h2>
+    <p>There was an issue generating the preview. Please try refreshing or contact support.</p>
+  </div>
+</body>
+</html>`
   }
 }
 
@@ -35,6 +138,7 @@ export default function SiteDetailPage() {
   const [logoUrl, setLogoUrl] = useState<string>('')
   const [previewKey, setPreviewKey] = useState(0)
   const [aiChangesApplying, setAiChangesApplying] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   const router = useRouter()
   const routeParams = useParams<{ id: string }>()
   const id = routeParams?.id as string | undefined
@@ -269,6 +373,16 @@ export default function SiteDetailPage() {
         return newKey
       })
       setAiChangesApplying(false)
+      
+      // Show success message
+      let changeTypes = []
+      if (changes.colors) changeTypes.push('Colors')
+      if (changes.content) changeTypes.push('Content')
+      if (changes.layout) changeTypes.push('Layout')
+      
+      setSuccessMessage(`✅ ${changeTypes.join(' & ')} updated successfully!`)
+      setTimeout(() => setSuccessMessage(''), 3000)
+      
       console.log('=== AI CHANGES APPLICATION COMPLETED ===')
     }, 500)
   }
@@ -503,34 +617,17 @@ export default function SiteDetailPage() {
                     key={`preview-${site.id}-${previewKey}-${primary}-${secondary}-${accent}-${headline}-${subheadline}`}
                     className="w-full h-full border-0 rounded-b-3xl"
                     title="Live preview"
-                    srcDoc={`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <style>
-    ${site.generated_css.replace(/--brand-primary:\s*[^;]+;/g, `--brand-primary: ${primary};`)
-                       .replace(/--brand-secondary:\s*[^;]+;/g, `--brand-secondary: ${secondary};`)
-                       .replace(/--brand-accent:\s*[^;]+;/g, `--brand-accent: ${accent};`)}
-    :root {
-      --brand-primary: ${primary} !important;
-      --brand-secondary: ${secondary} !important;
-      --brand-accent: ${accent} !important;
-    }
-  </style>
-</head>
-<body>
-  ${site.generated_html.replace(/\$\{brand\.brandName\}/g, brandName || site.brand_name || 'Brand')
-                      .replace(/\$\{brandName\.toUpperCase\(\)\}/g, (brandName || site.brand_name || 'Brand').toUpperCase())
-                      .replace(/\$\{brand\.copy\.headline\}/g, headline || site.headline || 'Your Headline')
-                      .replace(/\$\{brand\.copy\.subheadline\}/g, subheadline || site.subheadline || 'Your subheadline')
-                      .replace(/\$\{brand\.copy\.cta\}/g, cta || site.cta || 'Get Started')
-                      .replace(/\$\{brand\.logoUrl\}/g, logoUrl || site.logo_url || '')
-                      .replace(/\$\{brand\.ctaUrl\}/g, ctaUrl || '#')
-                      .replace(/\$\{headline \|\| 'WIN BIG WITH BONANZA BILLION SLOTS!'\}/g, headline || site.headline || 'WIN BIG WITH BONANZA BILLION SLOTS!')
-                      .replace(/\$\{cta \|\| 'SPIN TO WIN'\}/g, cta || site.cta || 'SPIN TO WIN')}
-</body>
-</html>`}
+                    srcDoc={generatePreviewHTML(site, {
+                      primary,
+                      secondary, 
+                      accent,
+                      headline: headline || site.headline || '',
+                      subheadline: subheadline || site.subheadline || '',
+                      cta: cta || site.cta || '',
+                      brandName: brandName || site.brand_name || '',
+                      logoUrl: logoUrl || site.logo_url || '',
+                      ctaUrl: ctaUrl || '#'
+                    })}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-b-3xl">

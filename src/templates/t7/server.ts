@@ -2,8 +2,17 @@ import { BrandConfig } from '../../lib/types'
 import { generateCSSVariables } from '@/lib/colors'
 
 export function renderTemplate(brand: BrandConfig): { html: string; css: string } {
-  const { brandName, logoUrl, colors, copy } = brand
-  const { headline, subheadline, cta } = copy
+  // Safely extract brand data with fallbacks
+  const brandName = brand.brandName || 'Bonanza Casino'
+  const logoUrl = brand.logoUrl || ''
+  const colors = {
+    primary: brand.colors?.primary || '#FFD700',
+    secondary: brand.colors?.secondary || '#FF6B35', 
+    accent: brand.colors?.accent || '#FF1744'
+  }
+  const headline = brand.copy?.headline || 'WIN BIG WITH BONANZA BILLION SLOTS!'
+  const subheadline = brand.copy?.subheadline || 'Premium 3x3 slot machine with life-changing prizes'
+  const cta = brand.copy?.cta || 'SPIN TO WIN'
 
   const css = `
     :root {
