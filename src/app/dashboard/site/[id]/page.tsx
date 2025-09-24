@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Site } from '@/lib/types'
 import { LogoUploader } from '@/components/LogoUploader'
 import { extractColorsFromImage } from '@/lib/colors'
+import { FloatingAIChat } from '@/components/FloatingAIChat'
 import Link from 'next/link'
 
 interface SiteDetailPageProps {
@@ -25,11 +26,6 @@ export default function SiteDetailPage() {
   const [primary, setPrimary] = useState('#3B82F6')
   const [secondary, setSecondary] = useState('#6B7280')
   const [accent, setAccent] = useState('#10B981')
-  // AI Chat state
-  const [showChat, setShowChat] = useState(false)
-  const [chatMessages, setChatMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([])
-  const [chatInput, setChatInput] = useState('')
-  const [chatLoading, setChatLoading] = useState(false)
   const [headline, setHeadline] = useState('')
   const [subheadline, setSubheadline] = useState('')
   const [cta, setCta] = useState('')
@@ -211,53 +207,18 @@ export default function SiteDetailPage() {
     }
   }
 
-  const handleChatSubmit = async () => {
-    if (!chatInput.trim() || chatLoading) return
-    
-    const userMessage = chatInput.trim()
-    setChatInput('')
-    setChatLoading(true)
-    
-    // Add user message
-    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }])
-    
-    try {
-      const response = await fetch('/api/ai-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userMessage,
-          siteId: site?.id,
-          templateId: site?.template_id,
-          currentColors: { primary, secondary, accent },
-          currentContent: { headline, subheadline, cta, brandName, description }
-        })
-      })
-      
-      if (response.ok) {
-        const result = await response.json()
-        setChatMessages(prev => [...prev, { role: 'assistant', content: result.message }])
-        
-        // Apply any suggested changes
-        if (result.changes) {
-          if (result.changes.colors) {
-            if (result.changes.colors.primary) setPrimary(result.changes.colors.primary)
-            if (result.changes.colors.secondary) setSecondary(result.changes.colors.secondary)
-            if (result.changes.colors.accent) setAccent(result.changes.colors.accent)
-          }
-          if (result.changes.content) {
-            if (result.changes.content.headline) setHeadline(result.changes.content.headline)
-            if (result.changes.content.subheadline) setSubheadline(result.changes.content.subheadline)
-            if (result.changes.content.cta) setCta(result.changes.content.cta)
-          }
-        }
-      } else {
-        setChatMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }])
-      }
-    } catch (error) {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }])
-    } finally {
-      setChatLoading(false)
+  const handleApplyAIChanges = (changes: any) => {
+    if (changes.colors) {
+      if (changes.colors.primary) setPrimary(changes.colors.primary)
+      if (changes.colors.secondary) setSecondary(changes.colors.secondary)
+      if (changes.colors.accent) setAccent(changes.colors.accent)
+    }
+    if (changes.content) {
+      if (changes.content.headline) setHeadline(changes.content.headline)
+      if (changes.content.subheadline) setSubheadline(changes.content.subheadline)
+      if (changes.content.cta) setCta(changes.content.cta)
+      if (changes.content.brandName) setBrandName(changes.content.brandName)
+      if (changes.content.description) setDescription(changes.content.description)
     }
   }
 
@@ -449,66 +410,6 @@ export default function SiteDetailPage() {
               </div>
             </div>
 
-            {/* AI Chat */}
-            <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-purple-400">AI Assistant</h3>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setShowChat(!showChat)}
-                  className="border-purple-400/40 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20"
-                >
-                  {showChat ? '✕' : '💬'} Chat
-                </Button>
-              </div>
-              
-              {showChat && (
-                <div className="space-y-4">
-                  {/* Chat Messages */}
-                  <div className="max-h-48 overflow-y-auto space-y-2 bg-slate-900/50 rounded-lg p-3">
-                    {chatMessages.length === 0 ? (
-                      <p className="text-gray-400 text-sm text-center py-4">
-                        💡 Ask me to modify your template!<br/>
-                        <span className="text-xs">"Make the buttons bigger" or "Change the background color"</span>
-                      </p>
-                    ) : (
-                      chatMessages.map((msg, idx) => (
-                        <div key={idx} className={`p-2 rounded text-sm ${
-                          msg.role === 'user' 
-                            ? 'bg-orange-500/20 text-orange-200 ml-4' 
-                            : 'bg-blue-500/20 text-blue-200 mr-4'
-                        }`}>
-                          <strong>{msg.role === 'user' ? 'You:' : 'AI:'}</strong> {msg.content}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  
-                  {/* Chat Input */}
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleChatSubmit()}
-                      placeholder="Ask AI to modify your template..."
-                      className="flex-1 px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      disabled={chatLoading}
-                    />
-                    <Button 
-                      onClick={handleChatSubmit}
-                      disabled={chatLoading || !chatInput.trim()}
-                      size="sm"
-                      className="bg-purple-500 hover:bg-purple-600 text-white px-3"
-                    >
-                      {chatLoading ? '⏳' : '➤'}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Actions */}
             <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
               <h3 className="text-lg font-semibold mb-4 text-green-400">Actions</h3>
@@ -585,6 +486,15 @@ export default function SiteDetailPage() {
           </div>
         </div>
       </main>
+      
+      {/* Floating AI Chat */}
+      <FloatingAIChat
+        siteId={site?.id}
+        templateId={site?.template_id}
+        currentColors={{ primary, secondary, accent }}
+        currentContent={{ headline, subheadline, cta, brandName, description }}
+        onApplyChanges={handleApplyAIChanges}
+      />
     </div>
   )
 }
