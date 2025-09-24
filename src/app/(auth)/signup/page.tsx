@@ -155,9 +155,11 @@ export default function SignupPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <Link href="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">P</span>
-              </div>
+              <img 
+                src="/images/olavivo mobile logo.png" 
+                alt="Olavivo Logo" 
+                className="w-10 h-10 object-contain"
+              />
               <h1 className="text-2xl font-bold text-orange-500">
                 Prelander AI
               </h1>

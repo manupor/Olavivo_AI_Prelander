@@ -6,7 +6,11 @@ export function renderTemplate(brand: BrandConfig): { html: string; css: string 
   const { headline, subheadline, cta } = copy
 
   const css = `
-    ${generateCSSVariables(colors)}
+    :root {
+      --brand-primary: ${colors.primary};
+      --brand-secondary: ${colors.secondary};
+      --brand-accent: ${colors.accent};
+    }
     
     * {
       margin: 0;
@@ -51,8 +55,8 @@ export function renderTemplate(brand: BrandConfig): { html: string; css: string 
     }
     
     .slot-machine {
-      background: linear-gradient(to bottom, #475569, #334155);
-      border: 4px solid #facc15;
+      background: linear-gradient(to bottom, var(--brand-secondary), var(--brand-primary));
+      border: 4px solid var(--brand-accent);
       border-radius: 1.5rem;
       padding: 1.5rem;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -70,7 +74,7 @@ export function renderTemplate(brand: BrandConfig): { html: string; css: string 
     .slot-square {
       width: 5rem;
       height: 5rem;
-      background: linear-gradient(to bottom, #fb923c, #eab308);
+      background: linear-gradient(to bottom, var(--brand-primary), var(--brand-accent));
       border-radius: 0.75rem;
       display: flex;
       align-items: center;
@@ -80,8 +84,8 @@ export function renderTemplate(brand: BrandConfig): { html: string; css: string 
     }
     
     .game-controls {
-      background: linear-gradient(to bottom, #475569, #334155);
-      border: 4px solid #facc15;
+      background: linear-gradient(to bottom, var(--brand-secondary), var(--brand-primary));
+      border: 4px solid var(--brand-accent);
       border-radius: 1.5rem;
       padding: 1.5rem;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -99,7 +103,7 @@ export function renderTemplate(brand: BrandConfig): { html: string; css: string 
     
     .spin-button {
       width: 100%;
-      background: linear-gradient(to right, #f97316, #eab308);
+      background: linear-gradient(to right, var(--brand-primary), var(--brand-accent));
       color: white;
       font-weight: 900;
       font-size: 1.25rem;
@@ -113,7 +117,7 @@ export function renderTemplate(brand: BrandConfig): { html: string; css: string 
     
     .spin-button:hover {
       transform: scale(1.05);
-      background: linear-gradient(to right, #ea580c, #d97706);
+      opacity: 0.9;
     }
     
     .disclaimer {

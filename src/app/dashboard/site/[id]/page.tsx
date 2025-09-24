@@ -25,6 +25,11 @@ export default function SiteDetailPage() {
   const [primary, setPrimary] = useState('#3B82F6')
   const [secondary, setSecondary] = useState('#6B7280')
   const [accent, setAccent] = useState('#10B981')
+  // AI Chat state
+  const [showChat, setShowChat] = useState(false)
+  const [chatMessages, setChatMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
   const [headline, setHeadline] = useState('')
   const [subheadline, setSubheadline] = useState('')
   const [cta, setCta] = useState('')
@@ -126,20 +131,31 @@ export default function SiteDetailPage() {
         },
         body: JSON.stringify({
           templateId: site.template_id,
-          logoUrl: site.logo_url,
-          brandName: site.brand_name,
+          logoUrl: logoUrl || site.logo_url,
+          brandName: brandName || site.brand_name,
           industry: site.industry,
-          description: site.description,
+          description: description || site.description,
+          colors: { primary, secondary, accent },
+          headline,
+          subheadline,
+          cta,
+          ctaUrl,
         }),
       })
 
       if (response.ok) {
         const result = await response.json()
-        router.push(`/dashboard/site/${result.data.site.id}`)
+        // Refresh current page instead of navigating
+        if (result.data?.site?.id) {
+          await fetchSite(result.data.site.id)
+        } else {
+          await fetchSite(site.id)
+        }
       } else {
         alert('Failed to regenerate site')
       }
     } catch (error) {
+      console.error('Regeneration error:', error)
       alert('Failed to regenerate site')
     } finally {
       setRegenerating(false)
@@ -167,16 +183,22 @@ export default function SiteDetailPage() {
       if (response.ok) {
         const result = await response.json()
         setSite(result.data)
-        setPrimary(result.data.primary_color)
-        setSecondary(result.data.secondary_color)
-        setAccent(result.data.accent_color)
-        setHeadline(result.data.headline || '')
-        setSubheadline(result.data.subheadline || '')
-        setCta(result.data.cta || '')
-        setBrandName(result.data.brand_name || '')
-        setDescription(result.data.description || '')
-        setLogoUrl(result.data.logo_url || '')
-        // setCtaUrl not synced from server (not persisted yet)
+        setPrimary(result.data.primary_color || primary)
+        setSecondary(result.data.secondary_color || secondary)
+        setAccent(result.data.accent_color || accent)
+        setHeadline(result.data.headline || headline)
+        setSubheadline(result.data.subheadline || subheadline)
+        setCta(result.data.cta || cta)
+        setBrandName(result.data.brand_name || brandName)
+        setDescription(result.data.description || description)
+        setLogoUrl(result.data.logo_url || logoUrl)
+        
+        // Show success message
+        const successMsg = document.createElement('div')
+        successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
+        successMsg.textContent = 'Changes saved successfully!'
+        document.body.appendChild(successMsg)
+        setTimeout(() => document.body.removeChild(successMsg), 3000)
       } else {
         const err = await response.json().catch(() => ({}))
         console.error('Save error:', err)
@@ -186,6 +208,56 @@ export default function SiteDetailPage() {
       alert('Failed to save changes')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleChatSubmit = async () => {
+    if (!chatInput.trim() || chatLoading) return
+    
+    const userMessage = chatInput.trim()
+    setChatInput('')
+    setChatLoading(true)
+    
+    // Add user message
+    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }])
+    
+    try {
+      const response = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMessage,
+          siteId: site?.id,
+          templateId: site?.template_id,
+          currentColors: { primary, secondary, accent },
+          currentContent: { headline, subheadline, cta, brandName, description }
+        })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        setChatMessages(prev => [...prev, { role: 'assistant', content: result.message }])
+        
+        // Apply any suggested changes
+        if (result.changes) {
+          if (result.changes.colors) {
+            if (result.changes.colors.primary) setPrimary(result.changes.colors.primary)
+            if (result.changes.colors.secondary) setSecondary(result.changes.colors.secondary)
+            if (result.changes.colors.accent) setAccent(result.changes.colors.accent)
+          }
+          if (result.changes.content) {
+            if (result.changes.content.headline) setHeadline(result.changes.content.headline)
+            if (result.changes.content.subheadline) setSubheadline(result.changes.content.subheadline)
+            if (result.changes.content.cta) setCta(result.changes.content.cta)
+          }
+        }
+      } else {
+        setChatMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }])
+      }
+    } catch (error) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }])
+    } finally {
+      setChatLoading(false)
     }
   }
 
@@ -285,31 +357,31 @@ export default function SiteDetailPage() {
           {/* Left column: Brand Info, Colors, Copy, Actions */}
           <div className="lg:col-span-2 space-y-6">
             {/* Brand Info */}
-            <div className="bg-gradient-to-br from-purple-900/30 to-cyan-900/30 dark:from-purple-900/30 dark:to-cyan-900/30 light:from-white light:to-gray-50 backdrop-blur-xl border border-purple-500/30 dark:border-purple-500/30 light:border-gray-200 rounded-3xl p-6 shadow-2xl">
-              <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">Brand Information</h3>
+            <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+              <h3 className="text-lg font-semibold mb-4 text-orange-400">Brand Information</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700 mb-2">Brand Name</label>
-                  <input type="text" className="w-full px-4 py-3 bg-black/20 dark:bg-black/20 light:bg-white border border-purple-500/30 dark:border-purple-500/30 light:border-gray-300 rounded-2xl placeholder-gray-400 dark:placeholder-gray-400 light:placeholder-gray-500 text-white dark:text-white light:text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-300" value={brandName} onChange={(e) => setBrandName(e.target.value)} />
+                  <label className="block text-sm font-semibold text-orange-400 mb-2">Brand Name</label>
+                  <input type="text" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 backdrop-blur-sm transition-all duration-300" value={brandName} onChange={(e) => setBrandName(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700 mb-2">Description</label>
-                  <textarea className="w-full px-4 py-3 bg-black/20 dark:bg-black/20 light:bg-white border border-purple-500/30 dark:border-purple-500/30 light:border-gray-300 rounded-2xl placeholder-gray-400 dark:placeholder-gray-400 light:placeholder-gray-500 text-white dark:text-white light:text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-300" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+                  <label className="block text-sm font-semibold text-blue-400 mb-2">Description</label>
+                  <textarea className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 backdrop-blur-sm transition-all duration-300" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700 mb-2">Logo</label>
+                  <label className="block text-sm font-semibold text-orange-400 mb-2">Logo</label>
                   <LogoUploader onUpload={setLogoUrl} currentUrl={logoUrl} />
                 </div>
                 <div>
-                  <span className="text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700">Industry:</span>
+                  <span className="text-sm font-semibold text-blue-400">Industry:</span>
                   <span className="ml-2 text-sm text-gray-400 dark:text-gray-400 light:text-gray-600">{site.industry}</span>
                 </div>
                 <div>
-                  <span className="text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700">Template:</span>
+                  <span className="text-sm font-semibold text-blue-400">Template:</span>
                   <span className="ml-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-cyan-300 border border-cyan-500/30">Template {site.template_id.toUpperCase()}</span>
                 </div>
                 <div>
-                  <span className="text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700">Status:</span>
+                  <span className="text-sm font-semibold text-blue-400">Status:</span>
                   <span className={`ml-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
                     site.status === 'published'
                       ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-500/30'
@@ -322,81 +394,137 @@ export default function SiteDetailPage() {
             </div>
 
             {/* Colors */}
-            <div className="bg-gradient-to-br from-purple-900/30 to-cyan-900/30 dark:from-purple-900/30 dark:to-cyan-900/30 light:from-white light:to-gray-50 backdrop-blur-xl border border-purple-500/30 dark:border-purple-500/30 light:border-gray-200 rounded-3xl p-6 shadow-2xl">
-              <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">Brand Colors</h3>
+            <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+              <h3 className="text-lg font-semibold mb-4 text-orange-400">Brand Colors</h3>
               <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700 mb-2">Primary</label>
+                  <label className="block text-sm font-semibold text-orange-400 mb-2">Primary</label>
                   <div className="flex items-center space-x-3">
-                    <input type="color" className="h-12 w-16 p-1 border border-purple-500/30 rounded-xl" value={primary} onChange={(e) => setPrimary(e.target.value)} />
-                    <input type="text" className="flex-1 px-4 py-3 bg-black/20 dark:bg-black/20 light:bg-white border border-purple-500/30 dark:border-purple-500/30 light:border-gray-300 rounded-2xl text-white dark:text-white light:text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-300" value={primary} onChange={(e) => setPrimary(e.target.value)} />
+                    <input type="color" className="h-12 w-16 p-1 border border-slate-600 rounded-xl bg-slate-900" value={primary} onChange={(e) => setPrimary(e.target.value)} />
+                    <input type="text" className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 backdrop-blur-sm transition-all duration-300" value={primary} onChange={(e) => setPrimary(e.target.value)} />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700 mb-2">Secondary</label>
+                  <label className="block text-sm font-semibold text-blue-400 mb-2">Secondary</label>
                   <div className="flex items-center space-x-3">
-                    <input type="color" className="h-12 w-16 p-1 border border-purple-500/30 rounded-xl" value={secondary} onChange={(e) => setSecondary(e.target.value)} />
-                    <input type="text" className="flex-1 px-4 py-3 bg-black/20 dark:bg-black/20 light:bg-white border border-purple-500/30 dark:border-purple-500/30 light:border-gray-300 rounded-2xl text-white dark:text-white light:text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-300" value={secondary} onChange={(e) => setSecondary(e.target.value)} />
+                    <input type="color" className="h-12 w-16 p-1 border border-slate-600 rounded-xl bg-slate-900" value={secondary} onChange={(e) => setSecondary(e.target.value)} />
+                    <input type="text" className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 backdrop-blur-sm transition-all duration-300" value={secondary} onChange={(e) => setSecondary(e.target.value)} />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700 mb-2">Accent</label>
+                  <label className="block text-sm font-semibold text-green-400 mb-2">Accent</label>
                   <div className="flex items-center space-x-3">
-                    <input type="color" className="h-12 w-16 p-1 border border-purple-500/30 rounded-xl" value={accent} onChange={(e) => setAccent(e.target.value)} />
-                    <input type="text" className="flex-1 px-4 py-3 bg-black/20 dark:bg-black/20 light:bg-white border border-purple-500/30 dark:border-purple-500/30 light:border-gray-300 rounded-2xl text-white dark:text-white light:text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-300" value={accent} onChange={(e) => setAccent(e.target.value)} />
+                    <input type="color" className="h-12 w-16 p-1 border border-slate-600 rounded-xl bg-slate-900" value={accent} onChange={(e) => setAccent(e.target.value)} />
+                    <input type="text" className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 backdrop-blur-sm transition-all duration-300" value={accent} onChange={(e) => setAccent(e.target.value)} />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Copy */}
-            <div className="bg-gradient-to-br from-purple-900/30 to-cyan-900/30 dark:from-purple-900/30 dark:to-cyan-900/30 light:from-white light:to-gray-50 backdrop-blur-xl border border-purple-500/30 dark:border-purple-500/30 light:border-gray-200 rounded-3xl p-6 shadow-2xl">
-              <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">Generated Copy</h3>
+            <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+              <h3 className="text-lg font-semibold mb-4 text-blue-400">Generated Copy</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700 mb-2">Headline</label>
-                  <input type="text" className="w-full px-4 py-3 bg-black/20 dark:bg-black/20 light:bg-white border border-purple-500/30 dark:border-purple-500/30 light:border-gray-300 rounded-2xl placeholder-gray-400 dark:placeholder-gray-400 light:placeholder-gray-500 text-white dark:text-white light:text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-300" value={headline} onChange={(e) => setHeadline(e.target.value)} />
+                  <label className="block text-sm font-semibold text-orange-400 mb-2">Headline</label>
+                  <input type="text" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 backdrop-blur-sm transition-all duration-300" value={headline} onChange={(e) => setHeadline(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700 mb-2">Subheadline</label>
-                  <textarea className="w-full px-4 py-3 bg-black/20 dark:bg-black/20 light:bg-white border border-purple-500/30 dark:border-purple-500/30 light:border-gray-300 rounded-2xl placeholder-gray-400 dark:placeholder-gray-400 light:placeholder-gray-500 text-white dark:text-white light:text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-300" rows={3} value={subheadline} onChange={(e) => setSubheadline(e.target.value)} />
+                  <label className="block text-sm font-semibold text-blue-400 mb-2">Subheadline</label>
+                  <textarea className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 backdrop-blur-sm transition-all duration-300" rows={3} value={subheadline} onChange={(e) => setSubheadline(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700 mb-2">Call to Action (Button Text)</label>
-                  <input type="text" className="w-full px-4 py-3 bg-black/20 dark:bg-black/20 light:bg-white border border-purple-500/30 dark:border-purple-500/30 light:border-gray-300 rounded-2xl placeholder-gray-400 dark:placeholder-gray-400 light:placeholder-gray-500 text-white dark:text-white light:text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-300" value={cta} onChange={(e) => setCta(e.target.value)} />
+                  <label className="block text-sm font-semibold text-green-400 mb-2">Call to Action</label>
+                  <input type="text" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 backdrop-blur-sm transition-all duration-300" value={cta} onChange={(e) => setCta(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-purple-300 dark:text-purple-300 light:text-gray-700 mb-2">CTA URL (optional)</label>
-                  <input type="url" className="w-full px-4 py-3 bg-black/20 dark:bg-black/20 light:bg-white border border-purple-500/30 dark:border-purple-500/30 light:border-gray-300 rounded-2xl placeholder-gray-400 dark:placeholder-gray-400 light:placeholder-gray-500 text-white dark:text-white light:text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-300" placeholder="https://example.com/signup" value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} />
-                  <p className="text-xs text-gray-400 dark:text-gray-400 light:text-gray-500 mt-1">Used in rendered HTML buttons (not saved to database yet).</p>
+                  <label className="block text-sm font-semibold text-green-400 mb-2">CTA URL (Optional)</label>
+                  <input type="url" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 backdrop-blur-sm transition-all duration-300" placeholder="https://example.com" value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} />
                 </div>
                 <div className="pt-2">
-                  <Button onClick={handleSave} disabled={saving} className="w-full bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white border-0 shadow-lg shadow-purple-500/25 py-3 rounded-2xl font-semibold">
+                  <Button onClick={handleSave} disabled={saving} className="w-full bg-orange-500 hover:bg-orange-600 text-white border-0 shadow-lg shadow-orange-500/25 py-3 rounded-2xl font-semibold">
                     {saving ? 'Saving...' : '💾 Save Changes'}
                   </Button>
                 </div>
               </div>
             </div>
 
+            {/* AI Chat */}
+            <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-purple-400">AI Assistant</h3>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowChat(!showChat)}
+                  className="border-purple-400/40 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20"
+                >
+                  {showChat ? '✕' : '💬'} Chat
+                </Button>
+              </div>
+              
+              {showChat && (
+                <div className="space-y-4">
+                  {/* Chat Messages */}
+                  <div className="max-h-48 overflow-y-auto space-y-2 bg-slate-900/50 rounded-lg p-3">
+                    {chatMessages.length === 0 ? (
+                      <p className="text-gray-400 text-sm text-center py-4">
+                        💡 Ask me to modify your template!<br/>
+                        <span className="text-xs">"Make the buttons bigger" or "Change the background color"</span>
+                      </p>
+                    ) : (
+                      chatMessages.map((msg, idx) => (
+                        <div key={idx} className={`p-2 rounded text-sm ${
+                          msg.role === 'user' 
+                            ? 'bg-orange-500/20 text-orange-200 ml-4' 
+                            : 'bg-blue-500/20 text-blue-200 mr-4'
+                        }`}>
+                          <strong>{msg.role === 'user' ? 'You:' : 'AI:'}</strong> {msg.content}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  {/* Chat Input */}
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleChatSubmit()}
+                      placeholder="Ask AI to modify your template..."
+                      className="flex-1 px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      disabled={chatLoading}
+                    />
+                    <Button 
+                      onClick={handleChatSubmit}
+                      disabled={chatLoading || !chatInput.trim()}
+                      size="sm"
+                      className="bg-purple-500 hover:bg-purple-600 text-white px-3"
+                    >
+                      {chatLoading ? '⏳' : '➤'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Actions */}
-            <div className="bg-gradient-to-br from-purple-900/30 to-cyan-900/30 dark:from-purple-900/30 dark:to-cyan-900/30 light:from-white light:to-gray-50 backdrop-blur-xl border border-purple-500/30 dark:border-purple-500/30 light:border-gray-200 rounded-3xl p-6 shadow-2xl">
-              <h3 className="text-lg font-semibold mb-4 bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">Actions</h3>
+            <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+              <h3 className="text-lg font-semibold mb-4 text-green-400">Actions</h3>
               <div className="space-y-3">
-                <Button variant="outline" onClick={handleResetColors} className="w-full border-purple-400/40 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 hover:border-purple-400 backdrop-blur-sm font-semibold shadow-lg py-3 rounded-2xl">
+                <Button variant="outline" onClick={handleResetColors} className="w-full border-orange-400/40 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20 hover:border-orange-400 backdrop-blur-sm font-semibold shadow-lg py-3 rounded-2xl">
                   🎨 Reset to Logo Colors
                 </Button>
-                <Button variant="outline" onClick={handleReapplyTemplate} disabled={saving} className="w-full border-cyan-400/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400 backdrop-blur-sm font-semibold shadow-lg py-3 rounded-2xl">
-                  {saving ? 'Re-applying...' : '🔄 Re-apply Template'}
+                <Button variant="outline" onClick={handleRegenerate} disabled={regenerating} className="w-full border-blue-400/40 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 hover:border-blue-400 backdrop-blur-sm font-semibold shadow-lg py-3 rounded-2xl">
+                  {regenerating ? 'Regenerating...' : '🔄 Regenerate with AI'}
                 </Button>
                 {site.status === 'draft' && (
-                  <Button onClick={handlePublish} disabled={publishing} className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white border-0 shadow-lg shadow-green-500/25 py-3 rounded-2xl font-semibold">
+                  <Button onClick={handlePublish} disabled={publishing} className="w-full bg-green-500 hover:bg-green-600 text-white border-0 shadow-lg shadow-green-500/25 py-3 rounded-2xl font-semibold">
                     {publishing ? 'Publishing...' : '🚀 Publish Site'}
                   </Button>
                 )}
-                <Button variant="outline" onClick={handleRegenerate} disabled={regenerating} className="w-full border-pink-400/40 bg-pink-500/10 text-pink-300 hover:bg-pink-500/20 hover:border-pink-400 backdrop-blur-sm font-semibold shadow-lg py-3 rounded-2xl">
-                  {regenerating ? 'Regenerating...' : '🤖 Regenerate with AI'}
-                </Button>
-                <Button variant="outline" onClick={handleDownload} className="w-full border-blue-400/40 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 hover:border-blue-400 backdrop-blur-sm font-semibold shadow-lg py-3 rounded-2xl">
+                <Button variant="outline" onClick={handleDownload} className="w-full border-green-400/40 bg-green-500/10 text-green-300 hover:bg-green-500/20 hover:border-green-400 backdrop-blur-sm font-semibold shadow-lg py-3 rounded-2xl">
                   📦 Download Package
                 </Button>
               </div>
@@ -405,19 +533,52 @@ export default function SiteDetailPage() {
 
           {/* Right column: Live Preview */}
           <div className="lg:col-span-3">
-            <div className="bg-gradient-to-br from-purple-900/30 to-cyan-900/30 dark:from-purple-900/30 dark:to-cyan-900/30 light:from-white light:to-gray-50 backdrop-blur-xl border border-purple-500/30 dark:border-purple-500/30 light:border-gray-200 rounded-3xl overflow-hidden shadow-2xl">
-              <div className="bg-gradient-to-r from-purple-500/10 to-cyan-500/10 dark:from-purple-500/10 dark:to-cyan-500/10 light:from-gray-50 light:to-gray-100 px-6 py-4 border-b border-purple-500/20 dark:border-purple-500/20 light:border-gray-200">
-                <h3 className="text-lg font-semibold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">Live Preview</h3>
+            <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl">
+              <div className="bg-slate-700/50 px-6 py-4 border-b border-slate-600">
+                <h3 className="text-lg font-semibold text-green-400">Live Preview</h3>
               </div>
-              <div className="h-96 lg:h-[600px]">
-                {site.status === 'published' ? (
-                  <iframe src={`/sites/${site.slug}`} className="w-full h-full border-0" title="Site preview" />
-                ) : (
+              <div className="h-96 lg:h-[600px] relative">
+                {site.generated_html && site.generated_css ? (
                   <iframe
-                    className="w-full h-full border-0"
-                    title="Draft preview"
-                    srcDoc={`<!DOCTYPE html><html><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/><style>${site.generated_css || ''}</style></head><body>${site.generated_html || ''}</body></html>`}
+                    key={`preview-${site.id}-${primary}-${secondary}-${accent}-${headline}-${subheadline}`}
+                    className="w-full h-full border-0 rounded-b-3xl"
+                    title="Live preview"
+                    srcDoc={`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    ${site.generated_css.replace(/--brand-primary:\s*[^;]+;/g, `--brand-primary: ${primary};`)
+                       .replace(/--brand-secondary:\s*[^;]+;/g, `--brand-secondary: ${secondary};`)
+                       .replace(/--brand-accent:\s*[^;]+;/g, `--brand-accent: ${accent};`)}
+    :root {
+      --brand-primary: ${primary} !important;
+      --brand-secondary: ${secondary} !important;
+      --brand-accent: ${accent} !important;
+    }
+  </style>
+</head>
+<body>
+  ${site.generated_html.replace(/\$\{brand\.brandName\}/g, brandName || site.brand_name || 'Brand')
+                      .replace(/\$\{brandName\.toUpperCase\(\)\}/g, (brandName || site.brand_name || 'Brand').toUpperCase())
+                      .replace(/\$\{brand\.copy\.headline\}/g, headline || site.headline || 'Your Headline')
+                      .replace(/\$\{brand\.copy\.subheadline\}/g, subheadline || site.subheadline || 'Your subheadline')
+                      .replace(/\$\{brand\.copy\.cta\}/g, cta || site.cta || 'Get Started')
+                      .replace(/\$\{brand\.logoUrl\}/g, logoUrl || site.logo_url || '')
+                      .replace(/\$\{brand\.ctaUrl\}/g, ctaUrl || '#')
+                      .replace(/\$\{headline \|\| 'WIN BIG WITH BONANZA BILLION SLOTS!'\}/g, headline || site.headline || 'WIN BIG WITH BONANZA BILLION SLOTS!')
+                      .replace(/\$\{cta \|\| 'SPIN TO WIN'\}/g, cta || site.cta || 'SPIN TO WIN')}
+</body>
+</html>`}
                   />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-b-3xl">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Loading preview...</p>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
