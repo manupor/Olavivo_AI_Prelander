@@ -121,13 +121,27 @@ export function FloatingAIChat({
 
         // Apply changes if provided
         if (result.changes) {
+          console.log('AI Chat: Received changes from API:', result.changes)
+          console.log('AI Chat: Calling onApplyChanges callback...')
           onApplyChanges(result.changes)
+          console.log('AI Chat: onApplyChanges callback completed')
           
-          // Add confirmation message
+          // Add detailed confirmation message
+          let changeDetails = []
+          if (result.changes.colors) {
+            changeDetails.push(`🎨 Colors updated`)
+          }
+          if (result.changes.content) {
+            changeDetails.push(`✏️ Content updated`)
+          }
+          if (result.changes.layout) {
+            changeDetails.push(`📐 Layout modified`)
+          }
+          
           const confirmMessage: Message = {
             id: (Date.now() + 2).toString(),
             role: 'system',
-            content: '✅ Changes applied successfully! You should see the updates in your preview.',
+            content: `✅ Changes applied successfully! ${changeDetails.join(', ')}\n\nCheck your preview on the right to see the updates!`,
             timestamp: new Date()
           }
           setMessages(prev => [...prev, confirmMessage])

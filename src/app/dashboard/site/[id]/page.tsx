@@ -33,6 +33,8 @@ export default function SiteDetailPage() {
   const [brandName, setBrandName] = useState('')
   const [description, setDescription] = useState('')
   const [logoUrl, setLogoUrl] = useState<string>('')
+  const [previewKey, setPreviewKey] = useState(0)
+  const [aiChangesApplying, setAiChangesApplying] = useState(false)
   const router = useRouter()
   const routeParams = useParams<{ id: string }>()
   const id = routeParams?.id as string | undefined
@@ -208,18 +210,67 @@ export default function SiteDetailPage() {
   }
 
   const handleApplyAIChanges = (changes: any) => {
+    console.log('=== STARTING AI CHANGES APPLICATION ===')
+    console.log('Received changes:', changes)
+    console.log('Current state before changes:', { primary, secondary, accent, headline, subheadline, cta })
+    
+    setAiChangesApplying(true)
+    
+    // Apply changes with immediate state updates
     if (changes.colors) {
-      if (changes.colors.primary) setPrimary(changes.colors.primary)
-      if (changes.colors.secondary) setSecondary(changes.colors.secondary)
-      if (changes.colors.accent) setAccent(changes.colors.accent)
+      console.log('Applying color changes:', changes.colors)
+      if (changes.colors.primary) {
+        console.log('Setting primary color from', primary, 'to', changes.colors.primary)
+        setPrimary(changes.colors.primary)
+      }
+      if (changes.colors.secondary) {
+        console.log('Setting secondary color from', secondary, 'to', changes.colors.secondary)
+        setSecondary(changes.colors.secondary)
+      }
+      if (changes.colors.accent) {
+        console.log('Setting accent color from', accent, 'to', changes.colors.accent)
+        setAccent(changes.colors.accent)
+      }
     }
+    
     if (changes.content) {
-      if (changes.content.headline) setHeadline(changes.content.headline)
-      if (changes.content.subheadline) setSubheadline(changes.content.subheadline)
-      if (changes.content.cta) setCta(changes.content.cta)
-      if (changes.content.brandName) setBrandName(changes.content.brandName)
-      if (changes.content.description) setDescription(changes.content.description)
+      console.log('Applying content changes:', changes.content)
+      if (changes.content.headline) {
+        console.log('Setting headline from', headline, 'to', changes.content.headline)
+        setHeadline(changes.content.headline)
+      }
+      if (changes.content.subheadline) {
+        console.log('Setting subheadline from', subheadline, 'to', changes.content.subheadline)
+        setSubheadline(changes.content.subheadline)
+      }
+      if (changes.content.cta) {
+        console.log('Setting CTA from', cta, 'to', changes.content.cta)
+        setCta(changes.content.cta)
+      }
+      if (changes.content.brandName) {
+        console.log('Setting brand name from', brandName, 'to', changes.content.brandName)
+        setBrandName(changes.content.brandName)
+      }
+      if (changes.content.description) {
+        console.log('Setting description from', description, 'to', changes.content.description)
+        setDescription(changes.content.description)
+      }
     }
+    
+    if (changes.layout) {
+      console.log('Layout changes detected:', changes.layout)
+    }
+    
+    // Force multiple re-renders to ensure changes take effect
+    setTimeout(() => {
+      setPreviewKey(prev => {
+        const newKey = prev + 1
+        console.log('Preview key updated from', prev, 'to', newKey)
+        return newKey
+      })
+      setAiChangesApplying(false)
+      console.log('=== AI CHANGES APPLICATION COMPLETED ===')
+    }, 500)
   }
 
   const handleResetColors = async () => {
@@ -436,12 +487,20 @@ export default function SiteDetailPage() {
           <div className="lg:col-span-3">
             <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl overflow-hidden shadow-2xl">
               <div className="bg-slate-700/50 px-6 py-4 border-b border-slate-600">
-                <h3 className="text-lg font-semibold text-green-400">Live Preview</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-green-400">Live Preview</h3>
+                  {aiChangesApplying && (
+                    <div className="flex items-center space-x-2 text-blue-400">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                      <span className="text-sm">Applying AI changes...</span>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="h-96 lg:h-[600px] relative">
                 {site.generated_html && site.generated_css ? (
                   <iframe
-                    key={`preview-${site.id}-${primary}-${secondary}-${accent}-${headline}-${subheadline}`}
+                    key={`preview-${site.id}-${previewKey}-${primary}-${secondary}-${accent}-${headline}-${subheadline}`}
                     className="w-full h-full border-0 rounded-b-3xl"
                     title="Live preview"
                     srcDoc={`<!DOCTYPE html>
