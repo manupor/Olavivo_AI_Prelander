@@ -30,43 +30,53 @@ class LocalAIAssistant {
   }
 
   processMessage(message: string) {
-    const lowerMessage = message.toLowerCase()
+    // Advanced natural language processing
+    const intent = this.analyzeIntent(message)
+    const entities = this.extractEntities(message)
+    
     let response = ""
     let changes = null
 
-    // Navigation bar request
-    if (lowerMessage.includes('navigation') || lowerMessage.includes('nav bar') || lowerMessage.includes('menu')) {
-      response = "🚀 I'll add a navigation bar to your template! This will include menu items and improve user navigation."
-      changes = this.addNavigationBar()
-    }
-    // Color changes
-    else if (this.isColorRequest(lowerMessage)) {
-      const result = this.handleColorChange(lowerMessage)
-      response = result.message
-      changes = result.changes
-    }
-    // Content changes
-    else if (this.isContentRequest(lowerMessage)) {
-      const result = this.handleContentChange(lowerMessage)
-      response = result.message
-      changes = result.changes
-    }
-    // Layout changes
-    else if (this.isLayoutRequest(lowerMessage)) {
-      const result = this.handleLayoutChange(lowerMessage)
-      response = result.message
-      changes = result.changes
-    }
-    // General improvements
-    else if (lowerMessage.includes('improve') || lowerMessage.includes('better') || lowerMessage.includes('enhance')) {
-      const result = this.suggestImprovements(lowerMessage)
-      response = result.message
-      changes = result.changes
-    }
-    // Default helpful response
-    else {
-      response = this.getHelpfulResponse(lowerMessage)
-      changes = this.getSmartSuggestions(lowerMessage)
+    // Process based on detected intent
+    switch (intent.type) {
+      case 'color_change':
+        const colorResult = this.handleIntelligentColorChange(message, entities)
+        response = colorResult.message
+        changes = colorResult.changes
+        break
+        
+      case 'content_update':
+        const contentResult = this.handleIntelligentContentChange(message, entities)
+        response = contentResult.message
+        changes = contentResult.changes
+        break
+        
+      case 'layout_modification':
+        const layoutResult = this.handleIntelligentLayoutChange(message, entities)
+        response = layoutResult.message
+        changes = layoutResult.changes
+        break
+        
+      case 'feature_request':
+        const featureResult = this.handleFeatureRequest(message, entities)
+        response = featureResult.message
+        changes = featureResult.changes
+        break
+        
+      case 'general_improvement':
+        const improvementResult = this.handleGeneralImprovement(message, entities)
+        response = improvementResult.message
+        changes = improvementResult.changes
+        break
+        
+      case 'question':
+        response = this.handleQuestion(message, entities)
+        changes = null
+        break
+        
+      default:
+        response = this.handleConversationalResponse(message)
+        changes = this.getContextualSuggestions(message)
     }
 
     return { message: response, changes }
@@ -232,25 +242,437 @@ class LocalAIAssistant {
     return responses[Math.floor(Math.random() * responses.length)]
   }
 
-  private getSmartSuggestions(message: string) {
-    // Provide smart suggestions based on template type
-    if (this.templateId.includes('casino') || this.templateId === 't4' || this.templateId === 't5' || this.templateId === 't6' || this.templateId === 't7') {
-      return {
-        colors: { primary: '#FFD700', secondary: '#FF6B35', accent: '#FF1744' },
-        content: {
-          headline: 'Win Big Tonight!',
-          cta: 'Play Now & Win!'
-        }
+  // Advanced Natural Language Processing Methods
+  private analyzeIntent(message: string) {
+    const lowerMessage = message.toLowerCase()
+    
+    // Color-related intents
+    if (this.matchesPatterns(lowerMessage, [
+      'change color', 'make it', 'color scheme', 'palette', 'theme',
+      'looks too', 'more vibrant', 'darker', 'lighter', 'warmer', 'cooler'
+    ])) {
+      return { type: 'color_change', confidence: 0.9 }
+    }
+    
+    // Content update intents
+    if (this.matchesPatterns(lowerMessage, [
+      'headline', 'title', 'text', 'copy', 'button', 'cta', 'call to action',
+      'change the', 'update the', 'rewrite', 'improve the text'
+    ])) {
+      return { type: 'content_update', confidence: 0.9 }
+    }
+    
+    // Layout modification intents
+    if (this.matchesPatterns(lowerMessage, [
+      'bigger', 'smaller', 'size', 'layout', 'design', 'structure',
+      'move', 'position', 'spacing', 'modern', 'contemporary'
+    ])) {
+      return { type: 'layout_modification', confidence: 0.8 }
+    }
+    
+    // Feature request intents
+    if (this.matchesPatterns(lowerMessage, [
+      'add', 'include', 'navigation', 'menu', 'footer', 'header',
+      'contact form', 'social media', 'testimonials'
+    ])) {
+      return { type: 'feature_request', confidence: 0.9 }
+    }
+    
+    // General improvement intents
+    if (this.matchesPatterns(lowerMessage, [
+      'improve', 'better', 'enhance', 'optimize', 'professional',
+      'convert more', 'increase sales', 'more engaging'
+    ])) {
+      return { type: 'general_improvement', confidence: 0.8 }
+    }
+    
+    // Question intents
+    if (this.matchesPatterns(lowerMessage, [
+      'what', 'how', 'why', 'when', 'where', 'can you', 'do you',
+      'is it possible', 'help me understand'
+    ])) {
+      return { type: 'question', confidence: 0.7 }
+    }
+    
+    return { type: 'conversational', confidence: 0.5 }
+  }
+  
+  private extractEntities(message: string) {
+    const entities = {
+      colors: [] as string[],
+      elements: [] as string[],
+      actions: [] as string[],
+      adjectives: [] as string[],
+      numbers: [] as number[]
+    }
+    
+    const lowerMessage = message.toLowerCase()
+    
+    // Extract colors
+    const colorPatterns = {
+      'blue': ['blue', 'navy', 'azure', 'cyan'],
+      'red': ['red', 'crimson', 'scarlet', 'cherry'],
+      'green': ['green', 'emerald', 'lime', 'forest'],
+      'orange': ['orange', 'tangerine', 'coral', 'peach'],
+      'purple': ['purple', 'violet', 'lavender', 'magenta'],
+      'yellow': ['yellow', 'gold', 'amber', 'sunshine'],
+      'pink': ['pink', 'rose', 'fuchsia', 'salmon'],
+      'black': ['black', 'dark', 'charcoal'],
+      'white': ['white', 'light', 'bright', 'clean']
+    }
+    
+    for (const [color, variants] of Object.entries(colorPatterns)) {
+      if (variants.some(variant => lowerMessage.includes(variant))) {
+        entities.colors.push(color)
       }
     }
-
-    // Default business template suggestions
+    
+    // Extract elements
+    const elements = ['headline', 'title', 'button', 'text', 'background', 'logo', 'image', 'menu', 'navigation', 'footer', 'header']
+    entities.elements = elements.filter(element => lowerMessage.includes(element))
+    
+    // Extract actions
+    const actions = ['make', 'change', 'update', 'improve', 'add', 'remove', 'enhance', 'optimize', 'create']
+    entities.actions = actions.filter(action => lowerMessage.includes(action))
+    
+    // Extract adjectives
+    const adjectives = ['bigger', 'smaller', 'modern', 'professional', 'vibrant', 'bold', 'subtle', 'elegant', 'clean', 'minimal']
+    entities.adjectives = adjectives.filter(adj => lowerMessage.includes(adj))
+    
+    // Extract numbers
+    const numberMatches = message.match(/\d+/g)
+    entities.numbers = numberMatches ? numberMatches.map(n => parseInt(n)) : []
+    
+    return entities
+  }
+  
+  private matchesPatterns(message: string, patterns: string[]): boolean {
+    return patterns.some(pattern => message.includes(pattern))
+  }
+  
+  private handleIntelligentColorChange(message: string, entities: any) {
+    const lowerMessage = message.toLowerCase()
+    
+    // Analyze sentiment and intensity
+    const intensity = this.analyzeIntensity(message)
+    const mood = this.analyzeMood(message)
+    
+    let selectedColors = null
+    let reasoning = ""
+    
+    // Color selection based on entities and context
+    if (entities.colors.length > 0) {
+      const primaryColor = entities.colors[0]
+      selectedColors = this.getColorPalette(primaryColor, intensity, mood)
+      reasoning = `I've applied a ${primaryColor} color scheme based on your request. `
+    } else if (mood === 'energetic') {
+      selectedColors = this.getColorPalette('vibrant', intensity, mood)
+      reasoning = "I've chosen energetic, vibrant colors to match the dynamic tone of your message. "
+    } else if (mood === 'professional') {
+      selectedColors = this.getColorPalette('blue', intensity, mood)
+      reasoning = "I've selected professional blue tones that convey trust and reliability. "
+    } else if (mood === 'warm') {
+      selectedColors = this.getColorPalette('orange', intensity, mood)
+      reasoning = "I've chosen warm, inviting colors that create a friendly atmosphere. "
+    } else {
+      selectedColors = this.getColorPalette('balanced', intensity, mood)
+      reasoning = "I've created a balanced color palette that works well for your template. "
+    }
+    
+    // Add template-specific reasoning
+    const templateContext = this.getTemplateContext()
+    reasoning += templateContext.colorAdvice
+    
     return {
-      colors: { primary: '#3B82F6', secondary: '#1E40AF', accent: '#60A5FA' },
-      content: {
-        headline: 'Transform Your Business',
-        cta: 'Get Started Today'
+      message: `🎨 ${reasoning}This color scheme will enhance user engagement and improve the overall visual appeal of your ${this.templateId.toUpperCase()} template!`,
+      changes: { colors: selectedColors }
+    }
+  }
+  
+  private handleIntelligentContentChange(message: string, entities: any) {
+    const lowerMessage = message.toLowerCase()
+    const templateContext = this.getTemplateContext()
+    
+    let contentChanges = {}
+    let reasoning = ""
+    
+    // Analyze what content needs to be changed
+    if (entities.elements.includes('headline') || entities.elements.includes('title')) {
+      const newHeadline = this.generateContextualHeadline(message, templateContext)
+      contentChanges = { ...contentChanges, headline: newHeadline }
+      reasoning += "I've created a compelling headline that grabs attention. "
+    }
+    
+    if (entities.elements.includes('button') || lowerMessage.includes('cta')) {
+      const newCTA = this.generateContextualCTA(message, templateContext)
+      contentChanges = { ...contentChanges, cta: newCTA }
+      reasoning += "I've optimized your call-to-action for better conversions. "
+    }
+    
+    if (Object.keys(contentChanges).length === 0) {
+      // Generate comprehensive content update
+      contentChanges = {
+        headline: this.generateContextualHeadline(message, templateContext),
+        subheadline: this.generateContextualSubheadline(message, templateContext),
+        cta: this.generateContextualCTA(message, templateContext)
       }
+      reasoning = "I've optimized all your content elements for maximum impact. "
+    }
+    
+    reasoning += `The new copy is specifically crafted for ${templateContext.industry} and follows proven conversion principles.`
+    
+    return {
+      message: `✨ ${reasoning} These changes will help increase engagement and drive more conversions!`,
+      changes: { content: contentChanges }
+    }
+  }
+  
+  private handleIntelligentLayoutChange(message: string, entities: any) {
+    const lowerMessage = message.toLowerCase()
+    let layoutChanges = {}
+    let reasoning = ""
+    
+    if (entities.adjectives.includes('bigger') || lowerMessage.includes('larger')) {
+      layoutChanges = { scale: 'larger', emphasis: 'high' }
+      reasoning = "I've increased the size of key elements to create more visual impact and draw attention to important content. "
+    } else if (entities.adjectives.includes('smaller') || lowerMessage.includes('compact')) {
+      layoutChanges = { scale: 'smaller', density: 'high' }
+      reasoning = "I've made the layout more compact and space-efficient while maintaining readability. "
+    } else if (entities.adjectives.includes('modern') || entities.adjectives.includes('contemporary')) {
+      layoutChanges = { style: 'modern', spacing: 'generous', typography: 'clean' }
+      reasoning = "I've applied modern design principles with clean typography and generous spacing for a contemporary look. "
+    } else {
+      layoutChanges = { optimization: 'conversion', hierarchy: 'improved' }
+      reasoning = "I've optimized the layout for better user experience and conversion rates. "
+    }
+    
+    return {
+      message: `🎯 ${reasoning}These layout improvements will enhance usability and create a more professional appearance!`,
+      changes: { layout: layoutChanges }
+    }
+  }
+  
+  private handleFeatureRequest(message: string, entities: any) {
+    const lowerMessage = message.toLowerCase()
+    let features = {}
+    let reasoning = ""
+    
+    if (lowerMessage.includes('navigation') || lowerMessage.includes('menu')) {
+      features = this.addNavigationBar()
+      reasoning = "I've added a professional navigation bar with essential menu items. "
+    } else if (lowerMessage.includes('contact') || lowerMessage.includes('form')) {
+      features = { layout: { addContactForm: true }, content: { contactHeadline: 'Get In Touch' } }
+      reasoning = "I've added a contact form to help you capture leads and inquiries. "
+    } else if (lowerMessage.includes('testimonial') || lowerMessage.includes('review')) {
+      features = { layout: { addTestimonials: true }, content: { testimonialSection: true } }
+      reasoning = "I've added a testimonials section to build trust and credibility. "
+    } else {
+      features = { layout: { enhancement: 'comprehensive' } }
+      reasoning = "I've added several enhancements to improve your template's functionality. "
+    }
+    
+    return {
+      message: `🚀 ${reasoning}This new feature will improve user engagement and help achieve your business goals!`,
+      changes: features
+    }
+  }
+  
+  private handleGeneralImprovement(message: string, entities: any) {
+    const templateContext = this.getTemplateContext()
+    const improvements = {
+      colors: this.getOptimalColors(templateContext),
+      content: this.getOptimalContent(templateContext),
+      layout: { optimization: 'comprehensive', conversion: 'enhanced' }
+    }
+    
+    const reasoning = `I've applied comprehensive improvements to your ${templateContext.name} template: enhanced color psychology for better emotional response, optimized content for higher conversions, and improved layout for better user experience.`
+    
+    return {
+      message: `🚀 ${reasoning} These changes follow industry best practices and will significantly improve your template's performance!`,
+      changes: improvements
+    }
+  }
+  
+  private handleQuestion(message: string, entities: any) {
+    const lowerMessage = message.toLowerCase()
+    
+    if (lowerMessage.includes('what can you do') || lowerMessage.includes('help me')) {
+      return `💡 I'm your AI design assistant! I can help you with:
+
+🎨 **Colors & Themes**: "Make it more blue", "Use warmer colors", "Create a professional palette"
+✏️ **Content & Copy**: "Better headline", "Improve the CTA", "More engaging text"  
+📐 **Layout & Design**: "Make it bigger", "More modern layout", "Better spacing"
+🚀 **Features**: "Add navigation", "Include contact form", "Add testimonials"
+🎯 **Optimization**: "Improve conversions", "Make it more professional", "Enhance user experience"
+
+Just tell me what you'd like to change in natural language - I understand context and can make intelligent suggestions!`
+    }
+    
+    if (lowerMessage.includes('how') && lowerMessage.includes('work')) {
+      return `🤖 I analyze your message using natural language processing to understand:
+
+• **Intent**: What you want to accomplish
+• **Context**: Your template type and current design  
+• **Entities**: Specific colors, elements, or features mentioned
+• **Sentiment**: The mood and tone you're aiming for
+
+Then I apply design principles, color theory, and UX best practices to make intelligent changes that improve your template's effectiveness!`
+    }
+    
+    return `🤔 That's a great question! I'm here to help you improve your template. Try asking me to make specific changes like "make the colors more vibrant" or "improve the headline" - I'll understand and apply the changes intelligently!`
+  }
+  
+  private handleConversationalResponse(message: string) {
+    const responses = [
+      `💬 I understand you'd like to make some changes! Could you be more specific about what you'd like to improve? For example: "make it more colorful", "better headline", or "add navigation menu".`,
+      
+      `🎨 I'm ready to help enhance your template! Try telling me something like "use blue colors", "make the text bigger", or "improve the design" - I'll understand and make the changes.`,
+      
+      `✨ Let's make your template amazing! You can ask me to modify colors, update content, change layouts, or add features. Just describe what you want in your own words!`
+    ]
+    
+    return responses[Math.floor(Math.random() * responses.length)]
+  }
+  
+  private getContextualSuggestions(message: string) {
+    const templateContext = this.getTemplateContext()
+    return {
+      colors: this.getOptimalColors(templateContext),
+      content: this.getOptimalContent(templateContext)
+    }
+  }
+  
+  // Helper methods for intelligent processing
+  private analyzeIntensity(message: string): 'subtle' | 'moderate' | 'bold' {
+    const boldWords = ['very', 'really', 'extremely', 'super', 'much more', 'way more', 'bold', 'vibrant', 'intense']
+    const subtleWords = ['slightly', 'a bit', 'little', 'subtle', 'gentle', 'soft']
+    
+    const lowerMessage = message.toLowerCase()
+    
+    if (boldWords.some(word => lowerMessage.includes(word))) return 'bold'
+    if (subtleWords.some(word => lowerMessage.includes(word))) return 'subtle'
+    return 'moderate'
+  }
+  
+  private analyzeMood(message: string): 'professional' | 'energetic' | 'warm' | 'neutral' {
+    const professionalWords = ['professional', 'business', 'corporate', 'formal', 'clean', 'minimal']
+    const energeticWords = ['exciting', 'dynamic', 'vibrant', 'bold', 'energetic', 'fun']
+    const warmWords = ['warm', 'friendly', 'welcoming', 'cozy', 'inviting']
+    
+    const lowerMessage = message.toLowerCase()
+    
+    if (professionalWords.some(word => lowerMessage.includes(word))) return 'professional'
+    if (energeticWords.some(word => lowerMessage.includes(word))) return 'energetic'
+    if (warmWords.some(word => lowerMessage.includes(word))) return 'warm'
+    return 'neutral'
+  }
+  
+  private getColorPalette(colorType: string, intensity: string, mood: string) {
+    const palettes = {
+      'blue': {
+        subtle: { primary: '#60A5FA', secondary: '#3B82F6', accent: '#1E40AF' },
+        moderate: { primary: '#3B82F6', secondary: '#1E40AF', accent: '#1D4ED8' },
+        bold: { primary: '#1E40AF', secondary: '#1D4ED8', accent: '#1E3A8A' }
+      },
+      'red': {
+        subtle: { primary: '#F87171', secondary: '#EF4444', accent: '#DC2626' },
+        moderate: { primary: '#EF4444', secondary: '#DC2626', accent: '#B91C1C' },
+        bold: { primary: '#DC2626', secondary: '#B91C1C', accent: '#991B1B' }
+      },
+      'green': {
+        subtle: { primary: '#34D399', secondary: '#10B981', accent: '#059669' },
+        moderate: { primary: '#10B981', secondary: '#059669', accent: '#047857' },
+        bold: { primary: '#059669', secondary: '#047857', accent: '#065F46' }
+      },
+      'orange': {
+        subtle: { primary: '#FB923C', secondary: '#F97316', accent: '#EA580C' },
+        moderate: { primary: '#F97316', secondary: '#EA580C', accent: '#C2410C' },
+        bold: { primary: '#EA580C', secondary: '#C2410C', accent: '#9A3412' }
+      },
+      'vibrant': {
+        subtle: { primary: '#FF6B35', secondary: '#F7931E', accent: '#FFD23F' },
+        moderate: { primary: '#FF6B35', secondary: '#F7931E', accent: '#FFD23F' },
+        bold: { primary: '#FF4500', secondary: '#FF6B35', accent: '#F7931E' }
+      }
+    }
+    
+    return (palettes as any)[colorType]?.[intensity] || palettes['blue']['moderate']
+  }
+  
+  private getTemplateContext() {
+    const contexts = {
+      't1': { name: 'Minimal SaaS', industry: 'technology', colorAdvice: 'Professional blues work best for SaaS products.' },
+      't2': { name: 'Bold Marketing', industry: 'marketing', colorAdvice: 'Vibrant colors create strong visual impact.' },
+      't3': { name: 'Lead Generation', industry: 'business', colorAdvice: 'Conversion-focused colors like orange and green.' },
+      't4': { name: 'Casino Gaming', industry: 'gaming', colorAdvice: 'Gold and red create excitement and luxury.' },
+      't5': { name: 'iGaming Casino', industry: 'gaming', colorAdvice: 'Bright, energetic colors enhance the gaming experience.' },
+      't6': { name: 'Olavivo Casino Slots', industry: 'gaming', colorAdvice: 'Casino-style gold and red for authenticity.' },
+      't7': { name: 'Bonanza Billion', industry: 'gaming', colorAdvice: 'Jackpot gold and premium colors for high-stakes feel.' }
+    }
+    
+    return (contexts as any)[this.templateId] || contexts['t1']
+  }
+  
+  private generateContextualHeadline(message: string, context: any): string {
+    const headlines = {
+      'technology': ['Transform Your Business Today', 'Innovation Starts Here', 'The Future is Now'],
+      'marketing': ['Unleash Your Potential', 'Drive Real Results', 'Marketing That Works'],
+      'business': ['Generate More Leads', 'Grow Your Business', 'Success Starts Here'],
+      'gaming': ['Win Big Tonight!', 'Jackpot Awaits!', 'Your Lucky Day!']
+    }
+    
+    const options = (headlines as any)[context.industry] || headlines['business']
+    return options[Math.floor(Math.random() * options.length)]
+  }
+  
+  private generateContextualSubheadline(message: string, context: any): string {
+    const subheadlines = {
+      'technology': ['Join thousands of successful companies using our platform'],
+      'marketing': ['Bold solutions that drive real results for your business'],
+      'business': ['Convert visitors into customers with our proven system'],
+      'gaming': ['Experience the thrill of premium gaming with massive jackpots']
+    }
+    
+    const options = (subheadlines as any)[context.industry] || subheadlines['business']
+    return options[0]
+  }
+  
+  private generateContextualCTA(message: string, context: any): string {
+    const ctas = {
+      'technology': ['Start Free Trial', 'Get Started', 'Try It Now'],
+      'marketing': ['Get Started Now', 'Boost My Results', 'Start Growing'],
+      'business': ['Claim Your Spot', 'Get More Leads', 'Start Converting'],
+      'gaming': ['Play Now', 'Spin to Win', 'Hit Jackpot']
+    }
+    
+    const options = (ctas as any)[context.industry] || ctas['business']
+    return options[Math.floor(Math.random() * options.length)]
+  }
+  
+  private getOptimalColors(context: any) {
+    const optimalColors = {
+      'technology': { primary: '#3B82F6', secondary: '#1E40AF', accent: '#60A5FA' },
+      'marketing': { primary: '#F97316', secondary: '#EA580C', accent: '#FB923C' },
+      'business': { primary: '#10B981', secondary: '#059669', accent: '#34D399' },
+      'gaming': { primary: '#FFD700', secondary: '#FF6B35', accent: '#FF1744' }
+    }
+    
+    return (optimalColors as any)[context.industry] || optimalColors['business']
+  }
+  
+  private getOptimalContent(context: any) {
+    return {
+      headline: this.generateContextualHeadline('', context),
+      subheadline: this.generateContextualSubheadline('', context),
+      cta: this.generateContextualCTA('', context)
+    }
+  }
+
+  private getSmartSuggestions(message: string) {
+    const templateContext = this.getTemplateContext()
+    return {
+      colors: this.getOptimalColors(templateContext),
+      content: this.getOptimalContent(templateContext)
     }
   }
 }
