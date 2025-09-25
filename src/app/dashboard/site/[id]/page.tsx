@@ -7,138 +7,34 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Site } from '@/lib/types'
 import { LogoUploader } from '@/components/LogoUploader'
-import { extractColorsFromImage } from '@/lib/colors'
-import { FloatingAIChat } from '@/components/FloatingAIChat'
+import { ImageUploader } from '@/components/ImageUploader'
 
-// Clean HTML generation function with proper error handling
-function generatePreviewHTML(site: any, data: any): string {
-  try {
-    // Clean CSS with proper variable replacement
-    const cleanCSS = site.generated_css
-      .replace(/--brand-primary:\s*[^;]+;/g, `--brand-primary: ${data.primary};`)
-      .replace(/--brand-secondary:\s*[^;]+;/g, `--brand-secondary: ${data.secondary};`)
-      .replace(/--brand-accent:\s*[^;]+;/g, `--brand-accent: ${data.accent};`)
-
-    // Clean HTML with safe replacements
-    let cleanHTML = site.generated_html
-    
-    // Safe text replacements with fallbacks and error handling
-    const safeData = {
-      brandName: (data.brandName || 'Casino').toString(),
-      headline: (data.headline || 'Win Big!').toString(),
-      cta: (data.cta || 'Play Now').toString()
-    }
-
-    const replacements = [
-      { pattern: /💎\s*([^💎]*?)\s*💎/g, replacement: `💎 ${safeData.brandName.toUpperCase()} 💎` },
-      { pattern: /⭐\s*([^⭐]*?)\s*⭐/g, replacement: `⭐ ${safeData.headline} ⭐` },
-      { pattern: /🎰\s*([^🎰]*?)(?=<\/button>)/g, replacement: `🎰 ${safeData.cta}` },
-      { pattern: /<h2[^>]*>([^<]*?SLOTS[^<]*?)<\/h2>/gi, replacement: `<h2 style="font-size: 1.25rem; font-weight: bold; color: #facc15;">${safeData.brandName.toUpperCase()} SLOTS</h2>` },
-      { pattern: /<h1[^>]*>([^<]*?)<\/h1>/gi, replacement: `<h1 style="font-size: 3rem; font-weight: 900; color: #facc15; margin-bottom: 1.5rem; text-shadow: 0 0 1px #ffd700, 0 0 2px #ffd700, 0 1px 0 rgba(0,0,0,0.3);">💎 ${safeData.brandName.toUpperCase()} 💎</h1>` }
-    ]
-
-    replacements.forEach(({ pattern, replacement }) => {
-      try {
-        cleanHTML = cleanHTML.replace(pattern, replacement)
-      } catch (replaceError) {
-        console.warn('Replacement error:', replaceError)
-      }
-    })
-
-    // Handle logo with error handling
-    if (data.logoUrl) {
-      cleanHTML = cleanHTML.replace(
-        /<img[^>]*src="[^"]*"[^>]*>/gi,
-        `<img src="${data.logoUrl}" alt="${data.brandName}" style="height: 4rem; width: auto; max-width: 200px; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)) brightness(1.2) contrast(1.1);" onerror="this.style.display='none'; this.parentElement.style.minHeight='1rem';" />`
-      )
-    }
-
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>${data.brandName} - ${data.headline}</title>
-  <style>
-    ${cleanCSS}
-    :root {
-      --brand-primary: ${data.primary} !important;
-      --brand-secondary: ${data.secondary} !important;
-      --brand-accent: ${data.accent} !important;
-    }
-    /* Error handling styles */
-    img[src=""], img:not([src]) {
-      display: none !important;
-    }
-    .error-fallback {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px dashed rgba(255, 255, 255, 0.3);
-      padding: 1rem;
-      text-align: center;
-      color: rgba(255, 255, 255, 0.7);
-      border-radius: 0.5rem;
-    }
-  </style>
-</head>
-<body>
-  ${cleanHTML}
-</body>
-</html>`
-  } catch (error) {
-    console.error('Error generating preview HTML:', error)
-    return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Preview Error</title>
-  <style>
-    body { 
-      font-family: system-ui, sans-serif; 
-      padding: 2rem; 
-      background: #1a1a1a; 
-      color: white; 
-      text-align: center;
-    }
-    .error { 
-      background: rgba(239, 68, 68, 0.1); 
-      border: 1px solid rgba(239, 68, 68, 0.3); 
-      padding: 2rem; 
-      border-radius: 0.5rem; 
-      margin: 2rem 0;
-    }
-  </style>
-</head>
-<body>
-  <div class="error">
-    <h2>⚠️ Preview Error</h2>
-    <p>There was an issue generating the preview. Please try refreshing or contact support.</p>
-  </div>
-</body>
-</html>`
-  }
-}
 
 export default function SiteDetailPage() {
   const [site, setSite] = useState<Site | null>(null)
   const [loading, setLoading] = useState(true)
   const [publishing, setPublishing] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
-  const [saving, setSaving] = useState(false)
-  // Editable fields
-  const [primary, setPrimary] = useState('#3B82F6')
-  const [secondary, setSecondary] = useState('#6B7280')
-  const [accent, setAccent] = useState('#10B981')
-  const [headline, setHeadline] = useState('')
-  const [subheadline, setSubheadline] = useState('')
-  const [cta, setCta] = useState('')
-  const [ctaUrl, setCtaUrl] = useState('')
-  const [brandName, setBrandName] = useState('')
-  const [description, setDescription] = useState('')
-  const [logoUrl, setLogoUrl] = useState<string>('')
   const [previewKey, setPreviewKey] = useState(0)
   const [aiChangesApplying, setAiChangesApplying] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [previousVersion, setPreviousVersion] = useState<{html: string, css: string} | null>(null)
+  const [headline, setHeadline] = useState('')
+  const [logoUrl, setLogoUrl] = useState('')
+  const [brandName, setBrandName] = useState('')
+  const [saving, setSaving] = useState(false)
+  
+  // T2 Template specific states
+  const [heroImage, setHeroImage] = useState('')
+  const [featureImage1, setFeatureImage1] = useState('')
+  const [featureImage2, setFeatureImage2] = useState('')
+  const [feature1Title, setFeature1Title] = useState('')
+  const [feature1Description, setFeature1Description] = useState('')
+  const [feature2Title, setFeature2Title] = useState('')
+  const [feature2Description, setFeature2Description] = useState('')
+  const [showFeatures, setShowFeatures] = useState(true)
+  const [showPricing, setShowPricing] = useState(true)
+  const [showFaq, setShowFaq] = useState(true)
   const router = useRouter()
   const routeParams = useParams<{ id: string }>()
   const id = routeParams?.id as string | undefined
@@ -153,21 +49,29 @@ export default function SiteDetailPage() {
       if (response.ok) {
         const result = await response.json()
         setSite(result.data)
-        // Initialize edit fields
-        const s = result.data as Site
-        setPrimary(s.primary_color || '#3B82F6')
-        setSecondary(s.secondary_color || '#6B7280')
-        setAccent(s.accent_color || '#10B981')
-        setHeadline(s.headline || '')
-        setSubheadline(s.subheadline || '')
-        setCta(s.cta || 'Get Started')
-        setBrandName(s.brand_name || '')
-        setDescription(s.description || '')
-        setLogoUrl(s.logo_url || '')
-        setCtaUrl('') // CTA URL not persisted yet
+        setHeadline(result.data.headline || '')
+        setLogoUrl(result.data.logo_url || '')
+        setBrandName(result.data.brand_name || '')
+        
+        // Initialize T2 template specific data if available
+        if (result.data.template_id === 't2') {
+          const sections = result.data.sections || {}
+          setHeroImage(result.data.hero_image || '')
+          setFeatureImage1(result.data.feature_image1 || '')
+          setFeatureImage2(result.data.feature_image2 || '')
+          setFeature1Title(sections.features?.feature1?.title || '')
+          setFeature1Description(sections.features?.feature1?.description || '')
+          setFeature2Title(sections.features?.feature2?.title || '')
+          setFeature2Description(sections.features?.feature2?.description || '')
+          setShowFeatures(sections.features?.enabled !== false)
+          setShowPricing(sections.pricing?.enabled !== false)
+          setShowFaq(sections.faq?.enabled !== false)
+        }
+      } else {
+        console.error('Failed to fetch site')
       }
-    } catch {
-      console.error('Error fetching site:')
+    } catch (error) {
+      console.error('Error fetching site:', error)
     } finally {
       setLoading(false)
     }
@@ -224,43 +128,91 @@ export default function SiteDetailPage() {
   const handleRegenerate = async () => {
     if (!site) return
 
+    // Save current version before regenerating
+    if (site.generated_html && site.generated_css) {
+      setPreviousVersion({
+        html: site.generated_html,
+        css: site.generated_css
+      })
+    }
+
     setRegenerating(true)
     try {
-      const response = await fetch('/api/generate', {
+      const response = await fetch('/api/ai-regenerate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          siteId: site.id,
           templateId: site.template_id,
-          logoUrl: logoUrl || site.logo_url,
-          brandName: brandName || site.brand_name,
+          brandName: site.brand_name,
           industry: site.industry,
-          description: description || site.description,
-          colors: { primary, secondary, accent },
-          headline,
-          subheadline,
-          cta,
-          ctaUrl,
+          description: site.description,
+          logoUrl: site.logo_url,
+          currentColors: {
+            primary: site.primary_color,
+            secondary: site.secondary_color,
+            accent: site.accent_color
+          },
+          currentContent: {
+            headline: site.headline,
+            subheadline: site.subheadline,
+            cta: site.cta
+          },
+          regenerationType: 'layout_variant' // Request a layout variation
         }),
       })
 
       if (response.ok) {
         const result = await response.json()
-        // Refresh current page instead of navigating
-        if (result.data?.site?.id) {
-          await fetchSite(result.data.site.id)
-        } else {
-          await fetchSite(site.id)
-        }
+        setSite(result.data)
+        setPreviewKey(prev => prev + 1)
+        
+        // Show success message
+        setSuccessMessage('✨ New layout variant generated! You can rollback if needed.')
+        setTimeout(() => setSuccessMessage(''), 4000)
       } else {
-        alert('Failed to regenerate site')
+        const errorData = await response.json().catch(() => ({}))
+        alert(`Failed to regenerate site: ${errorData.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Regeneration error:', error)
       alert('Failed to regenerate site')
     } finally {
       setRegenerating(false)
+    }
+  }
+
+  const handleRollback = async () => {
+    if (!site || !previousVersion) return
+
+    try {
+      const response = await fetch(`/api/sites/${site.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          generated_html: previousVersion.html,
+          generated_css: previousVersion.css,
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setSite(result.data)
+        setPreviousVersion(null) // Clear previous version after rollback
+        setPreviewKey(prev => prev + 1)
+        
+        // Show success message
+        setSuccessMessage('↩️ Rolled back to previous version successfully!')
+        setTimeout(() => setSuccessMessage(''), 3000)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        alert(`Failed to rollback: ${errorData.error || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Rollback error:', error)
+      alert('Failed to rollback to previous version')
     }
   }
 
@@ -272,35 +224,49 @@ export default function SiteDetailPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          brand_name: brandName,
-          description,
-          logo_url: logoUrl || undefined,
-          colors: { primary, secondary, accent },
           headline,
-          subheadline,
-          cta,
-          ctaUrl: ctaUrl || undefined,
+          logo_url: logoUrl || undefined,
+          brand_name: brandName,
+          // T2 template specific data
+          ...(site?.template_id === 't2' && {
+            hero_image: heroImage || undefined,
+            feature_image1: featureImage1 || undefined,
+            feature_image2: featureImage2 || undefined,
+            sections: {
+              features: {
+                feature1: {
+                  title: feature1Title || undefined,
+                  description: feature1Description || undefined,
+                  enabled: showFeatures
+                },
+                feature2: {
+                  title: feature2Title || undefined,
+                  description: feature2Description || undefined,
+                  enabled: showFeatures
+                },
+                enabled: showFeatures
+              },
+              pricing: {
+                enabled: showPricing
+              },
+              faq: {
+                enabled: showFaq
+              }
+            }
+          })
         }),
       })
       if (response.ok) {
         const result = await response.json()
         setSite(result.data)
-        setPrimary(result.data.primary_color || primary)
-        setSecondary(result.data.secondary_color || secondary)
-        setAccent(result.data.accent_color || accent)
         setHeadline(result.data.headline || headline)
-        setSubheadline(result.data.subheadline || subheadline)
-        setCta(result.data.cta || cta)
-        setBrandName(result.data.brand_name || brandName)
-        setDescription(result.data.description || description)
         setLogoUrl(result.data.logo_url || logoUrl)
+        setBrandName(result.data.brand_name || brandName)
+        setPreviewKey(prev => prev + 1)
         
         // Show success message
-        const successMsg = document.createElement('div')
-        successMsg.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-        successMsg.textContent = 'Changes saved successfully!'
-        document.body.appendChild(successMsg)
-        setTimeout(() => document.body.removeChild(successMsg), 3000)
+        setSuccessMessage('✅ Changes saved successfully!')
+        setTimeout(() => setSuccessMessage(''), 3000)
       } else {
         const err = await response.json().catch(() => ({}))
         console.error('Save error:', err)
@@ -311,102 +277,6 @@ export default function SiteDetailPage() {
     } finally {
       setSaving(false)
     }
-  }
-
-  const handleApplyAIChanges = (changes: any) => {
-    console.log('=== STARTING AI CHANGES APPLICATION ===')
-    console.log('Received changes:', changes)
-    console.log('Current state before changes:', { primary, secondary, accent, headline, subheadline, cta })
-    
-    setAiChangesApplying(true)
-    
-    // Apply changes with immediate state updates
-    if (changes.colors) {
-      console.log('Applying color changes:', changes.colors)
-      if (changes.colors.primary) {
-        console.log('Setting primary color from', primary, 'to', changes.colors.primary)
-        setPrimary(changes.colors.primary)
-      }
-      if (changes.colors.secondary) {
-        console.log('Setting secondary color from', secondary, 'to', changes.colors.secondary)
-        setSecondary(changes.colors.secondary)
-      }
-      if (changes.colors.accent) {
-        console.log('Setting accent color from', accent, 'to', changes.colors.accent)
-        setAccent(changes.colors.accent)
-      }
-    }
-    
-    if (changes.content) {
-      console.log('Applying content changes:', changes.content)
-      if (changes.content.headline) {
-        console.log('Setting headline from', headline, 'to', changes.content.headline)
-        setHeadline(changes.content.headline)
-      }
-      if (changes.content.subheadline) {
-        console.log('Setting subheadline from', subheadline, 'to', changes.content.subheadline)
-        setSubheadline(changes.content.subheadline)
-      }
-      if (changes.content.cta) {
-        console.log('Setting CTA from', cta, 'to', changes.content.cta)
-        setCta(changes.content.cta)
-      }
-      if (changes.content.brandName) {
-        console.log('Setting brand name from', brandName, 'to', changes.content.brandName)
-        setBrandName(changes.content.brandName)
-      }
-      if (changes.content.description) {
-        console.log('Setting description from', description, 'to', changes.content.description)
-        setDescription(changes.content.description)
-      }
-    }
-    
-    if (changes.layout) {
-      console.log('Layout changes detected:', changes.layout)
-    }
-    
-    // Force multiple re-renders to ensure changes take effect
-    setTimeout(() => {
-      setPreviewKey(prev => {
-        const newKey = prev + 1
-        console.log('Preview key updated from', prev, 'to', newKey)
-        return newKey
-      })
-      setAiChangesApplying(false)
-      
-      // Show success message
-      let changeTypes = []
-      if (changes.colors) changeTypes.push('Colors')
-      if (changes.content) changeTypes.push('Content')
-      if (changes.layout) changeTypes.push('Layout')
-      
-      setSuccessMessage(`✅ ${changeTypes.join(' & ')} updated successfully!`)
-      setTimeout(() => setSuccessMessage(''), 3000)
-      
-      console.log('=== AI CHANGES APPLICATION COMPLETED ===')
-    }, 500)
-  }
-
-  const handleResetColors = async () => {
-    if (!logoUrl) {
-      alert('Please upload a logo first to extract colors.')
-      return
-    }
-    try {
-      const extracted = await extractColorsFromImage(logoUrl)
-      setPrimary(extracted.primary)
-      setSecondary(extracted.secondary)
-      setAccent(extracted.accent)
-      // Persist immediately so preview updates
-      await handleSave()
-    } catch (e) {
-      alert('Failed to extract colors from logo. You can still adjust colors manually.')
-    }
-  }
-
-  const handleReapplyTemplate = async () => {
-    // Force a re-render using current editable state without changing DB business fields beyond what we send
-    await handleSave()
   }
 
   if (loading) {
@@ -479,28 +349,20 @@ export default function SiteDetailPage() {
 
       {/* Main Content */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-5 gap-8">
-          {/* Left column: Brand Info, Colors, Copy, Actions */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Brand Info */}
+        <div className="grid lg:grid-cols-4 gap-8">
+          {/* Left column: Site Info & Actions */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Site Info */}
             <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
-              <h3 className="text-lg font-semibold mb-4 text-orange-400">Brand Information</h3>
+              <h3 className="text-lg font-semibold mb-4 text-orange-400">Site Information</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-orange-400 mb-2">Brand Name</label>
-                  <input type="text" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 backdrop-blur-sm transition-all duration-300" value={brandName} onChange={(e) => setBrandName(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-blue-400 mb-2">Description</label>
-                  <textarea className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 backdrop-blur-sm transition-all duration-300" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-orange-400 mb-2">Logo</label>
-                  <LogoUploader onUpload={setLogoUrl} currentUrl={logoUrl} />
+                  <span className="text-sm font-semibold text-orange-400">Brand:</span>
+                  <p className="text-white font-medium">{site.brand_name}</p>
                 </div>
                 <div>
                   <span className="text-sm font-semibold text-blue-400">Industry:</span>
-                  <span className="ml-2 text-sm text-gray-400 dark:text-gray-400 light:text-gray-600">{site.industry}</span>
+                  <p className="text-gray-300">{site.industry}</p>
                 </div>
                 <div>
                   <span className="text-sm font-semibold text-blue-400">Template:</span>
@@ -519,72 +381,182 @@ export default function SiteDetailPage() {
               </div>
             </div>
 
-            {/* Colors */}
+            {/* Edit Content */}
             <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
-              <h3 className="text-lg font-semibold mb-4 text-orange-400">Brand Colors</h3>
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-semibold text-orange-400 mb-2">Primary</label>
-                  <div className="flex items-center space-x-3">
-                    <input type="color" className="h-12 w-16 p-1 border border-slate-600 rounded-xl bg-slate-900" value={primary} onChange={(e) => setPrimary(e.target.value)} />
-                    <input type="text" className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 backdrop-blur-sm transition-all duration-300" value={primary} onChange={(e) => setPrimary(e.target.value)} />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-blue-400 mb-2">Secondary</label>
-                  <div className="flex items-center space-x-3">
-                    <input type="color" className="h-12 w-16 p-1 border border-slate-600 rounded-xl bg-slate-900" value={secondary} onChange={(e) => setSecondary(e.target.value)} />
-                    <input type="text" className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 backdrop-blur-sm transition-all duration-300" value={secondary} onChange={(e) => setSecondary(e.target.value)} />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-green-400 mb-2">Accent</label>
-                  <div className="flex items-center space-x-3">
-                    <input type="color" className="h-12 w-16 p-1 border border-slate-600 rounded-xl bg-slate-900" value={accent} onChange={(e) => setAccent(e.target.value)} />
-                    <input type="text" className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 backdrop-blur-sm transition-all duration-300" value={accent} onChange={(e) => setAccent(e.target.value)} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Copy */}
-            <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
-              <h3 className="text-lg font-semibold mb-4 text-blue-400">Generated Copy</h3>
+              <h3 className="text-lg font-semibold mb-4 text-purple-400">Edit Content</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-orange-400 mb-2">Headline</label>
-                  <input type="text" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 backdrop-blur-sm transition-all duration-300" value={headline} onChange={(e) => setHeadline(e.target.value)} />
+                  <label className="block text-sm font-semibold text-purple-400 mb-2">Brand Name</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 backdrop-blur-sm transition-all duration-300" 
+                    value={brandName} 
+                    onChange={(e) => setBrandName(e.target.value)}
+                    placeholder="Enter your brand name..."
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-blue-400 mb-2">Subheadline</label>
-                  <textarea className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 backdrop-blur-sm transition-all duration-300" rows={3} value={subheadline} onChange={(e) => setSubheadline(e.target.value)} />
+                  <label className="block text-sm font-semibold text-purple-400 mb-2">Headline</label>
+                  <input 
+                    type="text" 
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 backdrop-blur-sm transition-all duration-300" 
+                    value={headline} 
+                    onChange={(e) => setHeadline(e.target.value)}
+                    placeholder="Enter your headline..."
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-green-400 mb-2">Call to Action</label>
-                  <input type="text" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 backdrop-blur-sm transition-all duration-300" value={cta} onChange={(e) => setCta(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-green-400 mb-2">CTA URL (Optional)</label>
-                  <input type="url" className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 backdrop-blur-sm transition-all duration-300" placeholder="https://example.com" value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} />
+                  <label className="block text-sm font-semibold text-purple-400 mb-2">Logo</label>
+                  <LogoUploader onUpload={setLogoUrl} currentUrl={logoUrl} />
                 </div>
                 <div className="pt-2">
-                  <Button onClick={handleSave} disabled={saving} className="w-full bg-orange-500 hover:bg-orange-600 text-white border-0 shadow-lg shadow-orange-500/25 py-3 rounded-2xl font-semibold">
+                  <Button onClick={handleSave} disabled={saving} className="w-full bg-purple-500 hover:bg-purple-600 text-white border-0 shadow-lg shadow-purple-500/25 py-3 rounded-2xl font-semibold">
                     {saving ? 'Saving...' : '💾 Save Changes'}
                   </Button>
                 </div>
               </div>
             </div>
 
+            {/* T2 Template Specific Editing */}
+            {site?.template_id === 't2' && (
+              <>
+                {/* Images Section */}
+                <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+                  <h3 className="text-lg font-semibold mb-6 text-cyan-400">Template Images</h3>
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-cyan-400 mb-3">Hero Image</label>
+                      <ImageUploader 
+                        onUpload={setHeroImage} 
+                        currentUrl={heroImage}
+                        label="Hero Image"
+                        placeholder="Upload hero image for main section"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-cyan-400 mb-3">Feature 1 Image</label>
+                      <ImageUploader 
+                        onUpload={setFeatureImage1} 
+                        currentUrl={featureImage1}
+                        label="Feature 1 Image"
+                        placeholder="Upload image for first feature"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-cyan-400 mb-3">Feature 2 Image</label>
+                      <ImageUploader 
+                        onUpload={setFeatureImage2} 
+                        currentUrl={featureImage2}
+                        label="Feature 2 Image"
+                        placeholder="Upload image for second feature"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Features Content */}
+                <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-green-400">Features Section</h3>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={showFeatures}
+                        onChange={(e) => setShowFeatures(e.target.checked)}
+                        className="rounded border-slate-600 bg-slate-900/50 text-green-500 focus:ring-green-500"
+                      />
+                      <span className="text-sm text-gray-300">Show Section</span>
+                    </label>
+                  </div>
+                  {showFeatures && (
+                    <div className="space-y-4">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-green-400 mb-2">Feature 1 Title</label>
+                          <input
+                            type="text"
+                            className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 backdrop-blur-sm transition-all duration-300"
+                            value={feature1Title}
+                            onChange={(e) => setFeature1Title(e.target.value)}
+                            placeholder="Premium Quality"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-green-400 mb-2">Feature 2 Title</label>
+                          <input
+                            type="text"
+                            className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 backdrop-blur-sm transition-all duration-300"
+                            value={feature2Title}
+                            onChange={(e) => setFeature2Title(e.target.value)}
+                            placeholder="Fast Results"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-green-400 mb-2">Feature 1 Description</label>
+                          <textarea
+                            className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 backdrop-blur-sm transition-all duration-300 resize-none"
+                            rows={3}
+                            value={feature1Description}
+                            onChange={(e) => setFeature1Description(e.target.value)}
+                            placeholder="Experience the difference with our industry-leading solutions."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-green-400 mb-2">Feature 2 Description</label>
+                          <textarea
+                            className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-2xl placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 backdrop-blur-sm transition-all duration-300 resize-none"
+                            rows={3}
+                            value={feature2Description}
+                            onChange={(e) => setFeature2Description(e.target.value)}
+                            placeholder="See immediate impact with our proven methodology."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section Toggles */}
+                <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+                  <h3 className="text-lg font-semibold mb-4 text-yellow-400">Section Visibility</h3>
+                  <div className="space-y-3">
+                    <label className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl">
+                      <span className="text-white font-medium">Pricing Section</span>
+                      <input
+                        type="checkbox"
+                        checked={showPricing}
+                        onChange={(e) => setShowPricing(e.target.checked)}
+                        className="rounded border-slate-600 bg-slate-900/50 text-yellow-500 focus:ring-yellow-500"
+                      />
+                    </label>
+                    <label className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl">
+                      <span className="text-white font-medium">FAQ Section</span>
+                      <input
+                        type="checkbox"
+                        checked={showFaq}
+                        onChange={(e) => setShowFaq(e.target.checked)}
+                        className="rounded border-slate-600 bg-slate-900/50 text-yellow-500 focus:ring-yellow-500"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* Actions */}
             <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
               <h3 className="text-lg font-semibold mb-4 text-green-400">Actions</h3>
               <div className="space-y-3">
-                <Button variant="outline" onClick={handleResetColors} className="w-full border-orange-400/40 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20 hover:border-orange-400 backdrop-blur-sm font-semibold shadow-lg py-3 rounded-2xl">
-                  🎨 Reset to Logo Colors
-                </Button>
                 <Button variant="outline" onClick={handleRegenerate} disabled={regenerating} className="w-full border-blue-400/40 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 hover:border-blue-400 backdrop-blur-sm font-semibold shadow-lg py-3 rounded-2xl">
                   {regenerating ? 'Regenerating...' : '🔄 Regenerate with AI'}
                 </Button>
+                {previousVersion && (
+                  <Button variant="outline" onClick={handleRollback} className="w-full border-orange-400/40 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20 hover:border-orange-400 backdrop-blur-sm font-semibold shadow-lg py-3 rounded-2xl">
+                    ↩️ Rollback to Previous
+                  </Button>
+                )}
                 {site.status === 'draft' && (
                   <Button onClick={handlePublish} disabled={publishing} className="w-full bg-green-500 hover:bg-green-600 text-white border-0 shadow-lg shadow-green-500/25 py-3 rounded-2xl font-semibold">
                     {publishing ? 'Publishing...' : '🚀 Publish Site'}
@@ -614,20 +586,180 @@ export default function SiteDetailPage() {
               <div className="h-96 lg:h-[600px] relative">
                 {site.generated_html && site.generated_css ? (
                   <iframe
-                    key={`preview-${site.id}-${previewKey}-${primary}-${secondary}-${accent}-${headline}-${subheadline}`}
+                    key={`preview-${site.id}-${previewKey}-${brandName}-${headline}-${logoUrl}-${site?.template_id === 't2' ? `${heroImage}-${featureImage1}-${featureImage2}-${feature1Title}-${feature2Title}-${showFeatures}-${showPricing}-${showFaq}` : ''}`}
                     className="w-full h-full border-0 rounded-b-3xl"
                     title="Live preview"
-                    srcDoc={generatePreviewHTML(site, {
-                      primary,
-                      secondary, 
-                      accent,
-                      headline: headline || site.headline || '',
-                      subheadline: subheadline || site.subheadline || '',
-                      cta: cta || site.cta || '',
-                      brandName: brandName || site.brand_name || '',
-                      logoUrl: logoUrl || site.logo_url || '',
-                      ctaUrl: ctaUrl || '#'
-                    })}
+                    srcDoc={(() => {
+                      // For T2 template, we need to re-render with current editing values
+                      if (site?.template_id === 't2') {
+                        const brandConfig = {
+                          brandName: brandName || site.brand_name || 'Brand',
+                          logoUrl: logoUrl || site.logo_url,
+                          colors: {
+                            primary: site.primary_color || '#3B82F6',
+                            secondary: site.secondary_color || '#6B7280',
+                            accent: site.accent_color || '#10B981'
+                          },
+                          copy: {
+                            headline: headline || site.headline || 'Your Headline',
+                            subheadline: site.subheadline || 'Your subheadline',
+                            cta: site.cta || 'Get Started'
+                          },
+                          heroImage: heroImage,
+                          featureImage1: featureImage1,
+                          featureImage2: featureImage2,
+                          sections: {
+                            features: {
+                              feature1: {
+                                title: feature1Title || 'Premium Quality',
+                                description: feature1Description || 'Experience the difference with our industry-leading solutions.',
+                                enabled: showFeatures
+                              },
+                              feature2: {
+                                title: feature2Title || 'Fast Results',
+                                description: feature2Description || 'See immediate impact with our proven methodology.',
+                                enabled: showFeatures
+                              },
+                              enabled: showFeatures
+                            },
+                            pricing: { enabled: showPricing },
+                            faq: { enabled: showFaq }
+                          }
+                        };
+                        
+                        // Generate CSS variables
+                        const cssVars = `
+                          :root {
+                            --brand-primary: ${brandConfig.colors.primary};
+                            --brand-secondary: ${brandConfig.colors.secondary};
+                            --brand-accent: ${brandConfig.colors.accent};
+                          }
+                        `;
+                        
+                        return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>${cssVars}</style>
+</head>
+<body>
+  <div id="preview-root"></div>
+  <script>
+    // This is a simplified preview - in production, the server renders the full template
+    document.getElementById('preview-root').innerHTML = \`
+      <div class="min-h-screen bg-white">
+        <section class="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-600 to-green-500">
+          <div class="relative max-w-7xl mx-auto px-4 py-24">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+              <div class="text-white">
+                <div class="flex items-center mb-8">
+                  ${brandConfig.logoUrl ? `<div class="bg-white/10 backdrop-blur-sm rounded-2xl p-3 mr-4"><img src="${brandConfig.logoUrl}" alt="${brandConfig.brandName}" class="h-8 w-auto filter brightness-0 invert"></div>` : ''}
+                  <span class="text-2xl font-bold">${brandConfig.brandName}</span>
+                </div>
+                <h1 class="text-6xl lg:text-7xl font-black mb-6 leading-tight">${brandConfig.copy.headline}</h1>
+                <p class="text-xl lg:text-2xl mb-10 opacity-90 leading-relaxed max-w-lg">${brandConfig.copy.subheadline}</p>
+                <button class="bg-white text-blue-600 px-10 py-5 rounded-2xl text-lg font-bold hover:bg-gray-50 transition-all duration-300 shadow-2xl">${brandConfig.copy.cta}</button>
+              </div>
+              <div class="relative">
+                <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl">
+                  <div class="aspect-[4/3] bg-white/10 rounded-2xl overflow-hidden">
+                    ${brandConfig.heroImage ? `<img src="${brandConfig.heroImage}" alt="Hero image" class="w-full h-full object-cover">` : `
+                      <div class="w-full h-full flex items-center justify-center text-white/60">
+                        <div class="text-center">
+                          <div class="text-6xl mb-4">🎯</div>
+                          <p class="text-lg font-semibold">Hero Image</p>
+                          <p class="text-sm opacity-75">Upload to customize</p>
+                        </div>
+                      </div>
+                    `}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        ${brandConfig.sections.features.enabled ? `
+        <section class="py-24 bg-gray-50">
+          <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-20">
+              <h2 class="text-5xl font-black text-gray-900 mb-6">Why Choose Us</h2>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-12">
+              <div class="bg-white rounded-3xl p-10 shadow-xl">
+                <div class="mb-8">
+                  ${brandConfig.featureImage1 ? `<div class="w-20 h-20 rounded-2xl overflow-hidden shadow-lg"><img src="${brandConfig.featureImage1}" class="w-full h-full object-cover"></div>` : `<div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-gray-400 to-blue-600 flex items-center justify-center shadow-lg"><span class="text-3xl text-white">⭐</span></div>`}
+                </div>
+                <h3 class="text-3xl font-bold text-gray-900 mb-4">${brandConfig.sections.features.feature1.title}</h3>
+                <p class="text-lg text-gray-600">${brandConfig.sections.features.feature1.description}</p>
+              </div>
+              <div class="bg-white rounded-3xl p-10 shadow-xl">
+                <div class="mb-8">
+                  ${brandConfig.featureImage2 ? `<div class="w-20 h-20 rounded-2xl overflow-hidden shadow-lg"><img src="${brandConfig.featureImage2}" class="w-full h-full object-cover"></div>` : `<div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-500 to-blue-600 flex items-center justify-center shadow-lg"><span class="text-3xl text-white">⚡</span></div>`}
+                </div>
+                <h3 class="text-3xl font-bold text-gray-900 mb-4">${brandConfig.sections.features.feature2.title}</h3>
+                <p class="text-lg text-gray-600">${brandConfig.sections.features.feature2.description}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        ` : ''}
+        ${brandConfig.sections.pricing.enabled ? `
+        <section class="py-24 bg-white">
+          <div class="max-w-7xl mx-auto px-4 text-center">
+            <h2 class="text-5xl font-black text-gray-900 mb-6">Simple Pricing</h2>
+            <div class="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto mt-20">
+              <div class="bg-white border-2 border-gray-200 rounded-3xl p-8">
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Starter</h3>
+                <div class="text-5xl font-black text-gray-900 mb-8">$99<span class="text-gray-500 text-lg">/month</span></div>
+                <button class="w-full bg-gray-900 text-white py-4 rounded-2xl font-semibold">${brandConfig.copy.cta}</button>
+              </div>
+              <div class="bg-blue-600 text-white rounded-3xl p-8 transform scale-105 shadow-2xl">
+                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2"><span class="bg-white text-blue-600 px-6 py-2 rounded-full text-sm font-bold shadow-lg">Most Popular</span></div>
+                <h3 class="text-2xl font-bold mb-2">Professional</h3>
+                <div class="text-5xl font-black mb-8">$199<span class="text-white/80 text-lg">/month</span></div>
+                <button class="w-full bg-white text-blue-600 py-4 rounded-2xl font-semibold">${brandConfig.copy.cta}</button>
+              </div>
+              <div class="bg-white border-2 border-gray-200 rounded-3xl p-8">
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Enterprise</h3>
+                <div class="text-5xl font-black text-gray-900 mb-8">$399<span class="text-gray-500 text-lg">/month</span></div>
+                <button class="w-full bg-gray-900 text-white py-4 rounded-2xl font-semibold">${brandConfig.copy.cta}</button>
+              </div>
+            </div>
+          </div>
+        </section>
+        ` : ''}
+      </div>
+    \`;
+  </script>
+</body>
+</html>`;
+                      } else {
+                        // For other templates, use the existing logic
+                        return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>${site.generated_css}</style>
+</head>
+<body>
+  ${site.generated_html
+    .replace(/\$\{brand\.copy\.headline[^}]*\}/g, headline || site.headline || 'Your Headline')
+    .replace(/\$\{brand\.brandName\.toUpperCase\(\)\}/g, (brandName || site.brand_name || 'Brand').toUpperCase())
+    .replace(/\$\{brand\.brandName\}/g, brandName || site.brand_name || 'Brand')
+    .replace(/\$\{brand\.logoUrl\s*\?\s*`[^`]*`\s*:\s*''\}/g, logoUrl ? `
+            <div style="margin-bottom: 20px;">
+                <img src="${logoUrl}" alt="${site.brand_name}" style="height: 60px; width: auto; max-width: 200px; object-fit: contain;" onerror="this.style.display='none';" />
+            </div>
+            ` : '')
+    .replace(/<img[^>]*src="[^"]*"[^>]*>/gi, logoUrl ? `<img src="${logoUrl}" alt="${site.brand_name}" style="height: 60px; width: auto; max-width: 200px; object-fit: contain;" onerror="this.style.display='none';" />` : '')
+  }
+</body>
+</html>`;
+                      }
+                    })()}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded-b-3xl">
@@ -643,14 +775,6 @@ export default function SiteDetailPage() {
         </div>
       </main>
       
-      {/* Floating AI Chat */}
-      <FloatingAIChat
-        siteId={site?.id}
-        templateId={site?.template_id}
-        currentColors={{ primary, secondary, accent }}
-        currentContent={{ headline, subheadline, cta, brandName, description }}
-        onApplyChanges={handleApplyAIChanges}
-      />
     </div>
   )
 }

@@ -42,6 +42,12 @@ CREATE TABLE visits (
   user_agent TEXT
 );
 
+-- Add T2 template specific columns
+ALTER TABLE sites ADD COLUMN IF NOT EXISTS hero_image TEXT;
+ALTER TABLE sites ADD COLUMN IF NOT EXISTS feature_image1 TEXT;
+ALTER TABLE sites ADD COLUMN IF NOT EXISTS feature_image2 TEXT;
+ALTER TABLE sites ADD COLUMN IF NOT EXISTS sections JSONB;
+
 -- Create indexes for better performance
 CREATE INDEX idx_organizations_owner_user_id ON organizations(owner_user_id);
 CREATE INDEX idx_sites_org_id ON sites(org_id);

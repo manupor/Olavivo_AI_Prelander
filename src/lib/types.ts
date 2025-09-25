@@ -31,6 +31,11 @@ export interface Site {
   status: 'draft' | 'published'
   created_at: string
   updated_at: string
+  // T2 Template specific fields
+  hero_image?: string
+  feature_image1?: string
+  feature_image2?: string
+  sections?: any // JSON field for section configuration
 }
 
 export interface Visit {
@@ -58,6 +63,41 @@ export interface BrandConfig {
   industry?: string
   description?: string
   ctaUrl?: string
+  // Template-specific images
+  heroImage?: string
+  featureImage1?: string
+  featureImage2?: string
+  // Editable content sections
+  sections?: {
+    features?: {
+      feature1?: {
+        title?: string
+        description?: string
+        enabled?: boolean
+      }
+      feature2?: {
+        title?: string
+        description?: string
+        enabled?: boolean
+      }
+    }
+    pricing?: {
+      enabled?: boolean
+      plans?: Array<{
+        name?: string
+        price?: string
+        enabled?: boolean
+      }>
+    }
+    faq?: {
+      enabled?: boolean
+      questions?: Array<{
+        question?: string
+        answer?: string
+        enabled?: boolean
+      }>
+    }
+  }
 }
 
 // Template render result

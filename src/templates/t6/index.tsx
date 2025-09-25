@@ -191,11 +191,299 @@ export function renderTemplate(brand: BrandConfig): { html: string; css: string 
             --brand-secondary: ${brand.colors.secondary};
             --brand-accent: ${brand.colors.accent};
         }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Orbitron', monospace; 
+            background: linear-gradient(145deg, #1A0F08, #2C1810); 
+            color: white; 
+            min-height: 100vh; 
+            overflow-x: hidden; 
+        }
+        
+        .container { 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 20px; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            position: relative; 
+        }
+        
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+        }
+        
+        .main-title { 
+            font-size: 2.5rem; 
+            font-weight: 900; 
+            color: var(--brand-primary); 
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); 
+            margin-bottom: 20px; 
+            animation: pulse 2s infinite; 
+        }
+        
+        .subtitle { 
+            font-size: 1.2rem; 
+            color: white; 
+            margin-bottom: 20px; 
+        }
+        
+        .bonus-timer { 
+            background: linear-gradient(45deg, var(--brand-secondary), var(--brand-accent)); 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 25px; 
+            font-weight: bold; 
+            display: inline-block; 
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4); 
+            animation: pulse 2s infinite; 
+        }
+        
+        .slot-machine { 
+            background: linear-gradient(145deg, #1A0F08, #2C1810); 
+            border: 6px solid var(--brand-primary); 
+            border-radius: 25px; 
+            padding: 40px; 
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.6); 
+            margin-bottom: 40px; 
+        }
+        
+        .prize-display { 
+            display: flex; 
+            justify-content: center; 
+            gap: 30px; 
+            margin-bottom: 30px; 
+        }
+        
+        .prize-item { 
+            padding: 15px; 
+            border-radius: 15px; 
+            text-align: center; 
+            border: 3px solid; 
+            min-width: 100px; 
+            font-weight: bold; 
+        }
+        
+        .prize-item.green { 
+            background: #22c55e; 
+            border-color: #16a34a; 
+        }
+        
+        .prize-item.purple { 
+            background: #8b5cf6; 
+            border-color: #7c3aed; 
+        }
+        
+        .slot-game { 
+            background: rgba(0, 0, 0, 0.6); 
+            border-radius: 20px; 
+            padding: 30px; 
+        }
+        
+        .rollover-line { 
+            display: flex; 
+            gap: 20px; 
+            justify-content: center; 
+            margin-bottom: 15px; 
+            padding: 15px; 
+            background: linear-gradient(145deg, #0a0a0a, #1a1a1a); 
+            border: 3px solid var(--brand-primary); 
+            border-radius: 15px; 
+        }
+        
+        .rollover-symbol { 
+            width: 80px; 
+            height: 80px; 
+            background: linear-gradient(145deg, var(--brand-secondary), var(--brand-primary)); 
+            border: 2px solid var(--brand-accent); 
+            border-radius: 12px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 2rem; 
+            transition: all 0.3s ease;
+        }
+        
+        .spin-button { 
+            width: 100%; 
+            background: linear-gradient(45deg, var(--brand-secondary), var(--brand-accent)); 
+            color: white; 
+            border: 3px solid var(--brand-primary); 
+            border-radius: 15px; 
+            padding: 20px; 
+            font-size: 1.5rem; 
+            font-weight: 900; 
+            cursor: pointer; 
+            margin-top: 20px; 
+            animation: pulse 2s infinite; 
+            transition: all 0.3s ease;
+        }
+        
+        .spin-button:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+        
+        .features { 
+            display: flex; 
+            gap: 30px; 
+            margin-bottom: 40px; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+        }
+        
+        .feature-item { 
+            background: rgba(0, 0, 0, 0.7); 
+            border: 2px solid var(--brand-primary); 
+            border-radius: 15px; 
+            padding: 20px; 
+            text-align: center; 
+            min-width: 150px; 
+            color: var(--brand-primary); 
+            font-weight: bold; 
+        }
+        
+        .cta-section { 
+            text-align: center; 
+        }
+        
+        .cta-button { 
+            background: linear-gradient(45deg, var(--brand-primary), var(--brand-accent)); 
+            color: #000; 
+            border: 3px solid var(--brand-primary); 
+            border-radius: 15px; 
+            padding: 20px 40px; 
+            font-size: 1.5rem; 
+            font-weight: 900; 
+            cursor: pointer; 
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); 
+            animation: pulse 2s infinite; 
+            transition: all 0.3s ease;
+        }
+        
+        .cta-button:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+        
+        .disclaimer { 
+            color: #888; 
+            font-size: 0.8rem; 
+            margin-top: 20px; 
+        }
+        
+        @keyframes pulse { 
+            0%, 100% { transform: scale(1); } 
+            50% { transform: scale(1.05); } 
+        }
+        
+        @keyframes spin {
+            0% { transform: rotateY(0deg); }
+            25% { transform: rotateY(90deg); }
+            50% { transform: rotateY(180deg); }
+            75% { transform: rotateY(270deg); }
+            100% { transform: rotateY(360deg); }
+        }
+        
+        .spinning {
+            animation: spin 0.1s linear infinite;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .win-content {
+            background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            margin: 20px;
+        }
+        
+        .win-content h2 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #000;
+            margin-bottom: 20px;
+        }
+        
+        .win-content p {
+            font-size: 1.2rem;
+            color: #000;
+            margin-bottom: 10px;
+        }
+        
+        .claim-btn {
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px 0;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .claim-btn:hover {
+            background: #16a34a;
+            transform: scale(1.05);
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: rgba(0, 0, 0, 0.7);
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 0.9rem;
+        }
+        
+        .close-btn:hover {
+            color: #000;
+        }
+        
+        @media (max-width: 768px) { 
+            .main-title { font-size: 2rem; } 
+            .rollover-symbol { width: 60px; height: 60px; font-size: 1.5rem; } 
+            .features { gap: 15px; } 
+            .feature-item { min-width: 120px; padding: 15px; } 
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header class="header">
+            ${brand.logoUrl ? `
+            <div style="margin-bottom: 20px;">
+                <img src="${brand.logoUrl}" alt="${brand.brandName}" style="height: 60px; width: auto; max-width: 200px; object-fit: contain;" onerror="this.style.display='none';" />
+            </div>
+            ` : ''}
             <h1 class="main-title">🏆 ${brand.copy.headline || `${brand.brandName.toUpperCase()} WINS AWAIT!`} 🏆</h1>
             <p class="subtitle">${brand.copy.subheadline || 'Join thousands of winners playing the hottest slots of 2025!'}</p>
             <div class="bonus-timer">⏰ Bonus expires: 5:55</div>
@@ -207,21 +495,21 @@ export function renderTemplate(brand: BrandConfig): { html: string; css: string 
             </div>
             <div class="slot-game">
                 <div class="rollover-line">
-                    <div class="rollover-symbol">💎</div>
-                    <div class="rollover-symbol">🎰</div>
-                    <div class="rollover-symbol">🍒</div>
+                    <div class="rollover-symbol" id="slot0">💎</div>
+                    <div class="rollover-symbol" id="slot1">🎰</div>
+                    <div class="rollover-symbol" id="slot2">🍒</div>
                 </div>
                 <div class="rollover-line">
-                    <div class="rollover-symbol">🏆</div>
-                    <div class="rollover-symbol">💰</div>
-                    <div class="rollover-symbol">⭐</div>
+                    <div class="rollover-symbol" id="slot3">🏆</div>
+                    <div class="rollover-symbol" id="slot4">💰</div>
+                    <div class="rollover-symbol" id="slot5">⭐</div>
                 </div>
                 <div class="rollover-line">
-                    <div class="rollover-symbol">💎</div>
-                    <div class="rollover-symbol">🎰</div>
-                    <div class="rollover-symbol">🍒</div>
+                    <div class="rollover-symbol" id="slot6">💎</div>
+                    <div class="rollover-symbol" id="slot7">🎰</div>
+                    <div class="rollover-symbol" id="slot8">🍒</div>
                 </div>
-                <button class="spin-button">ROLL TO WIN!</button>
+                <button class="spin-button" id="spinButton">ROLL TO WIN!</button>
             </div>
         </div>
         <div class="features">
@@ -230,64 +518,49 @@ export function renderTemplate(brand: BrandConfig): { html: string; css: string 
             <div class="feature-item">🏆<br>24/7 Support</div>
         </div>
         <div class="cta-section">
-            <button class="cta-button">🏆 ${brand.copy.cta || 'PLAY NOW & WIN BIG!'} 🏆</button>
+            <button class="cta-button" id="playNowBtn">🏆 ${brand.copy.cta || 'PLAY NOW & WIN BIG!'} 🏆</button>
             <p class="disclaimer">18+ only. Gamble Responsibly. Terms & Conditions Apply.</p>
         </div>
     </div>
+
+    <!-- Win Modal -->
+    <div id="winModal" class="modal">
+        <div class="win-content">
+            <h2>🎉 CONGRATULATIONS! 🎉</h2>
+            <p>You won <span style="font-weight: bold; font-size: 1.5em; color: #22c55e;">$1,000</span>!</p>
+            <p>🎁 Plus 50 FREE SPINS!</p>
+            <button class="claim-btn" id="claimBtn">CLAIM YOUR PRIZE NOW!</button>
+            <button class="close-btn" id="closeModal">Close</button>
+        </div>
+    </div>
+
     <script>
         // Slot machine functionality
         let spinCount = 0;
         let isSpinning = false;
         const symbols = ['💎', '🎰', '🍒', '🏆', '💰', '⭐'];
         
-        // Add CSS for animations
-        const style = document.createElement('style');
-        style.textContent = \`
-            @keyframes spin {
-                0% { transform: rotateY(0deg); }
-                25% { transform: rotateY(90deg); }
-                50% { transform: rotateY(180deg); }
-                75% { transform: rotateY(270deg); }
-                100% { transform: rotateY(360deg); }
-            }
-            @keyframes fadeIn {
-                from { opacity: 0; transform: scale(0.8); }
-                to { opacity: 1; transform: scale(1); }
-            }
-            @keyframes bounce {
-                0%, 20%, 53%, 80%, 100% { transform: translateY(0); }
-                40%, 43% { transform: translateY(-30px); }
-                70% { transform: translateY(-15px); }
-                90% { transform: translateY(-4px); }
-            }
-            .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
-            .animate-bounce { animation: bounce 1s infinite; }
-        \`;
-        document.head.appendChild(style);
-        
         function updateSlotSymbols() {
-            const slotSymbols = document.querySelectorAll('.rollover-symbol .rollover-icon');
-            slotSymbols.forEach((symbol, index) => {
-                if (spinCount >= 2) {
-                    // Show winning combination
-                    symbol.textContent = '🏆';
-                } else {
-                    // Show random symbols
-                    symbol.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+            for (let i = 0; i < 9; i++) {
+                const slot = document.getElementById('slot' + i);
+                if (slot) {
+                    if (spinCount >= 2) {
+                        // Show winning combination
+                        slot.textContent = '🏆';
+                    } else {
+                        // Show random symbols
+                        slot.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                    }
                 }
-            });
+            }
         }
         
         function showWinModal() {
             const modal = document.getElementById('winModal');
-            modal.style.display = 'flex';
-            modal.classList.remove('hidden');
-            modal.classList.add('animate-fadeIn');
-            
-            const content = modal.querySelector('.win-content');
-            content.classList.add('animate-bounce');
+            modal.classList.add('show');
         }
         
+        // Spin button functionality
         document.getElementById('spinButton').addEventListener('click', function() {
             if (isSpinning) return;
             
@@ -302,15 +575,17 @@ export function renderTemplate(brand: BrandConfig): { html: string; css: string 
             // Add spinning animation to all symbols
             const slotSymbols = document.querySelectorAll('.rollover-symbol');
             slotSymbols.forEach(symbol => {
-                symbol.style.animation = 'spin 0.1s linear infinite';
+                symbol.classList.add('spinning');
             });
             
             // Rapidly change symbols during spin
             const spinInterval = setInterval(() => {
-                const symbolElements = document.querySelectorAll('.rollover-symbol .rollover-icon');
-                symbolElements.forEach(symbol => {
-                    symbol.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-                });
+                for (let i = 0; i < 9; i++) {
+                    const slot = document.getElementById('slot' + i);
+                    if (slot) {
+                        slot.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                    }
+                }
             }, 100);
             
             // Stop spinning after 2 seconds
@@ -319,7 +594,7 @@ export function renderTemplate(brand: BrandConfig): { html: string; css: string 
                 
                 // Remove spin animation
                 slotSymbols.forEach(symbol => {
-                    symbol.style.animation = '';
+                    symbol.classList.remove('spinning');
                 });
                 
                 // Update final symbols
@@ -343,30 +618,24 @@ export function renderTemplate(brand: BrandConfig): { html: string; css: string 
         // Close win modal
         document.getElementById('closeModal').addEventListener('click', function() {
             const modal = document.getElementById('winModal');
-            modal.style.display = 'none';
-            modal.classList.add('hidden');
+            modal.classList.remove('show');
         });
 
-        // Claim button and CTA button
+        // CTA buttons
         const ctaUrl = '${brand.ctaUrl || 'https://example.com'}';
         
         document.getElementById('claimBtn').addEventListener('click', function() {
-            window.open(ctaUrl, '_blank');
+            if (ctaUrl && ctaUrl !== 'https://example.com') {
+                window.open(ctaUrl, '_blank');
+            }
         });
         
         document.getElementById('playNowBtn').addEventListener('click', function() {
-            window.open(ctaUrl, '_blank');
+            if (ctaUrl && ctaUrl !== 'https://example.com') {
+                window.open(ctaUrl, '_blank');
+            }
         });
-</script>
-    <div id="winModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
-        <div class="win-content bg-gradient-to-br from-yellow-400 to-orange-500 p-8 rounded-2xl text-center shadow-2xl max-w-md mx-4">
-            <h2 class="text-3xl font-black text-black mb-4">🎉 CONGRATULATIONS! 🎉</h2>
-            <p class="text-xl text-black mb-2">You won <span id="winAmount" class="font-bold text-2xl">$1,000</span>!</p>
-            <p class="text-black mb-6">🎁 Plus 50 FREE SPINS!</p>
-            <button id="claimBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg transform hover:scale-105 transition-all duration-200">CLAIM YOUR PRIZE NOW!</button>
-            <button id="closeModal" class="block mx-auto mt-4 text-black/70 hover:text-black text-sm underline">Close</button>
-        </div>
-    </div>
+    </script>
 </body>
 </html>`;
 
