@@ -73,7 +73,7 @@ export async function PUT(
     const body = await request.json()
 
     // Extract updatable fields
-    const update: any = {}
+    const update: Record<string, unknown> = {}
     if (typeof body.brand_name === 'string') update.brand_name = body.brand_name
     if (typeof body.description === 'string') update.description = body.description
     if (typeof body.headline === 'string') update.headline = body.headline
@@ -100,9 +100,9 @@ export async function PUT(
 
     // Validate hex colors; if invalid, discard updates and use existing
     const hexRe = /^#[0-9A-F]{6}$/i
-    if (update.primary_color && !hexRe.test(update.primary_color)) delete update.primary_color
-    if (update.secondary_color && !hexRe.test(update.secondary_color)) delete update.secondary_color
-    if (update.accent_color && !hexRe.test(update.accent_color)) delete update.accent_color
+    if (update.primary_color && !hexRe.test(update.primary_color as string)) delete update.primary_color
+    if (update.secondary_color && !hexRe.test(update.secondary_color as string)) delete update.secondary_color
+    if (update.accent_color && !hexRe.test(update.accent_color as string)) delete update.accent_color
 
     let html: string
     let css: string
@@ -110,8 +110,8 @@ export async function PUT(
     // Check if this is a direct HTML/CSS update (rollback) or needs re-rendering
     if (update.generated_html && update.generated_css) {
       // Direct update - use provided HTML/CSS (rollback scenario)
-      html = update.generated_html
-      css = update.generated_css
+      html = update.generated_html as string
+      css = update.generated_css as string
       console.log('Using direct HTML/CSS update (rollback)')
     } else {
       // Re-render template with updated brand config

@@ -26,7 +26,7 @@ interface FloatingAIChatProps {
     brandName: string
     description: string
   }
-  onApplyChanges: (changes: any) => void
+  onApplyChanges: (changes: Record<string, unknown>) => void
 }
 
 export function FloatingAIChat({ 
