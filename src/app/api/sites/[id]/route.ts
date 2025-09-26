@@ -90,7 +90,7 @@ export async function PUT(
     if (typeof body.hero_image === 'string') update.hero_image = body.hero_image
     if (typeof body.feature_image1 === 'string') update.feature_image1 = body.feature_image1
     if (typeof body.feature_image2 === 'string') update.feature_image2 = body.feature_image2
-    if (body.sections && typeof body.sections === 'object') update.sections = body.sections
+    if (body.sections && typeof body.sections === 'object') update.sections = body.sections as Record<string, unknown>
 
     if (body.colors) {
       if (typeof body.colors.primary === 'string') update.primary_color = body.colors.primary

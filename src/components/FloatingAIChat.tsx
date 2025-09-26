@@ -38,7 +38,7 @@ export function FloatingAIChat({
 }: FloatingAIChatProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Array<{id?: string; role: string; content: string; timestamp?: Date; isTyping?: boolean}>>([
     {
       id: '1',
       role: 'system',
@@ -127,7 +127,7 @@ export function FloatingAIChat({
           console.log('AI Chat: onApplyChanges callback completed')
           
           // Add detailed confirmation message
-          let changeDetails = []
+          const changeDetails = []
           if (result.changes.colors) {
             changeDetails.push(`🎨 Colors updated`)
           }
@@ -255,6 +255,9 @@ export function FloatingAIChat({
                   >
                     {message.isTyping ? (
                       <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-400 ml-2">
+                          {message.timestamp?.toLocaleTimeString() || 'now'}
+                        </span>
                         <div className="flex space-x-1">
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
@@ -268,7 +271,7 @@ export function FloatingAIChat({
                     <div className={`text-xs mt-1 opacity-70 ${
                       message.role === 'user' ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'
                     }`}>
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {message.timestamp?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || 'now'}
                     </div>
                   </div>
                 </div>
