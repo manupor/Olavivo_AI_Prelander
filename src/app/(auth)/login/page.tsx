@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ConfigurationNotice } from '@/components/ConfigurationNotice'
+import { DiagnosticInfo } from '@/components/DiagnosticInfo'
 import { Button } from '@/components/ui/button'
 
 export default function LoginPage() {
@@ -29,19 +30,23 @@ export default function LoginPage() {
     }
 
     try {
+      console.log('Attempting login with Supabase...')
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (error) {
+        console.error('Supabase auth error:', error)
         setError(error.message)
       } else {
+        console.log('Login successful, redirecting...')
         router.push('/dashboard')
         router.refresh()
       }
-    } catch {
-      setError('Authentication service is temporarily unavailable. Please try again later.')
+    } catch (err) {
+      console.error('Network/connection error:', err)
+      setError('Network error: Unable to connect to authentication service. Please check your internet connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -126,6 +131,7 @@ export default function LoginPage() {
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-2xl">
             <ConfigurationNotice />
+            <DiagnosticInfo />
             <form className="space-y-6" onSubmit={handleLogin}>
               {error && (
                 <div className="bg-red-500/20 border border-red-500/30 text-red-300 px-4 py-3 rounded-2xl text-sm backdrop-blur-sm">
