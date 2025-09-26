@@ -183,7 +183,7 @@ export function Template2({ brand }: Template2Props) {
             <div className="text-center mb-20">
               <h2 className="text-5xl font-black text-gray-900 mb-6">Simple Pricing</h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Choose the perfect plan for your needs. Start free, upgrade when you're ready.
+                Choose the perfect plan for your needs. Start free, upgrade when you&apos;re ready.
               </p>
             </div>
             
@@ -266,7 +266,7 @@ export function Template2({ brand }: Template2Props) {
             <div className="text-center mb-20">
               <h2 className="text-5xl font-black text-gray-900 mb-6">Got Questions?</h2>
               <p className="text-xl text-gray-600">
-                We've got answers. Here are some of the most common questions about {brand.brandName}.
+                We&apos;ve got answers. Here are some of the most common questions about {brand.brandName}.
               </p>
             </div>
             

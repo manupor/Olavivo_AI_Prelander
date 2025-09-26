@@ -106,7 +106,7 @@ export default function SignupPage() {
                   </span>
                 </h2>
                 <p className="text-lg text-gray-300 dark:text-gray-300 light:text-gray-600 mb-2">
-                  We've sent you a confirmation link at
+                  We&apos;ve sent you a confirmation link at
                 </p>
                 <p className="text-purple-400 dark:text-purple-400 light:text-purple-600 font-semibold mb-8">{email}</p>
                 <Link

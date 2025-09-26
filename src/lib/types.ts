@@ -35,7 +35,7 @@ export interface Site {
   hero_image?: string
   feature_image1?: string
   feature_image2?: string
-  sections?: any // JSON field for section configuration
+  sections?: Record<string, unknown> // JSON field for section configuration
 }
 
 export interface Visit {
